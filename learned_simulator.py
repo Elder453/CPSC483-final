@@ -1,17 +1,13 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from typing import List, Dict, Optional, Tuple, NamedTuple
 import numpy as np
 from connectivity_utils import compute_connectivity_for_batch
 from graph_network import EncodeProcessDecode
 from dataloader import NCDataset
-from attention_layer import GraphAttentionLayer
-
 
 STD_EPSILON = 1e-8
 INPUT_SEQUENCE_LENGTH = 6
-
 
 class NormalizationStats(NamedTuple):
     mean: np.ndarray
@@ -36,7 +32,19 @@ class LearnedSimulator(nn.Module):
         particle_type_embedding_size: int,
         args,
     ):
-        """Initialize the simulator."""
+        """Initialize the simulator.
+        
+        Args:
+            num_dimensions: Number of spatial dimensions
+            connectivity_radius: Radius for particle connectivity
+            graph_network_kwargs: Parameters for the GNN
+            boundaries: List of (min, max) bounds per dimension
+            normalization_stats: Statistics for normalizing physical quantities
+            num_particle_types: Number of particle types
+            device: Target computation device
+            particle_type_embedding_size: Size of particle type embeddings
+            args: Additional configuration arguments
+        """
         super().__init__()
         
         self._connectivity_radius = connectivity_radius
@@ -45,7 +53,6 @@ class LearnedSimulator(nn.Module):
         self._normalization_stats = normalization_stats
         self._node_input_size = (INPUT_SEQUENCE_LENGTH + 1) * num_dimensions
         self._edge_input_size = num_dimensions + 1
-        self.device = device
 
         # Initialize particle type embeddings if multiple types exist
         if self._num_particle_types > 1:
@@ -59,18 +66,11 @@ class LearnedSimulator(nn.Module):
         self._graph_network = EncodeProcessDecode(
             node_input_size=self._node_input_size,
             edge_input_size=self._edge_input_size,
-            latent_size=graph_network_kwargs['latent_size'],
-            mlp_hidden_size=graph_network_kwargs['mlp_hidden_size'],
-            mlp_num_hidden_layers=graph_network_kwargs['mlp_num_hidden_layers'],
-            num_message_passing_steps=graph_network_kwargs['num_message_passing_steps'],
             output_size=num_dimensions,
             device=device,
             args=args,
-            num_heads=graph_network_kwargs.get('num_heads', 4),  # Explicitly pass num_heads
-            **{k: v for k, v in graph_network_kwargs.items() 
-            if k not in ['latent_size', 'mlp_hidden_size', 'mlp_num_hidden_layers', 'num_message_passing_steps', 'num_heads']}
+            **graph_network_kwargs
         ).to(device)
-
 
     def _encoder_preprocessor(
         self,
@@ -79,30 +79,25 @@ class LearnedSimulator(nn.Module):
         global_context: Optional[torch.Tensor] = None,
         particle_types: Optional[torch.Tensor] = None
     ) -> NCDataset:
-        """Prepare input data for the graph network."""
+        """Prepare input data for the graph network.
+        
+        Args:
+            position_sequence: Particle positions over time [num_particles, num_steps, dim]
+            n_node: Number of particles per example
+            global_context: Optional global features
+            particle_types: Optional particle type indices
+        """
         # Get most recent positions and compute velocities
         most_recent_position = position_sequence[:, -1]
         velocity_sequence = time_diff(position_sequence)
-
-        # Move connectivity radius to the same device as positions
-        connectivity_radius = self._connectivity_radius[:most_recent_position.shape[0]].to(most_recent_position.device)
 
         # Compute connectivity graph
         senders, receivers, n_edge = compute_connectivity_for_batch(
             most_recent_position.cpu().numpy(),
             n_node.cpu().numpy(),
-            connectivity_radius.cpu().numpy(),
+            self._connectivity_radius,
             velocity_sequence.device
         )
-
-        # Debugging: Validate senders and receivers
-        num_particles = most_recent_position.shape[0]
-        print(f"Number of particles: {num_particles}")
-        print(f"Number of edges: {len(senders)}")
-        print(f"Senders min: {senders.min()}, max: {senders.max()}")
-        print(f"Receivers min: {receivers.min()}, max: {receivers.max()}")
-        assert senders.max() < num_particles, "Senders index out of range."
-        assert receivers.max() < num_particles, "Receivers index out of range."
 
         # Prepare node features
         node_features = []
@@ -120,7 +115,7 @@ class LearnedSimulator(nn.Module):
         distance_to_upper = torch.unsqueeze(boundaries[:, 1], 0) - most_recent_position
         distance_to_boundaries = torch.cat([distance_to_lower, distance_to_upper], dim=1)
         normalized_distances = torch.clip(
-            distance_to_boundaries / connectivity_radius.unsqueeze(-1),
+            distance_to_boundaries / self._connectivity_radius,
             -1.0,
             1.0
         )
@@ -134,11 +129,11 @@ class LearnedSimulator(nn.Module):
 
         # Prepare edge features
         edge_features = []
-
+        
         # Compute relative displacements and distances
         normalized_relative_displacements = (
             most_recent_position[senders] - most_recent_position[receivers]
-        ) / connectivity_radius[senders].unsqueeze(-1)
+        ) / self._connectivity_radius
         edge_features.append(normalized_relative_displacements)
 
         normalized_relative_distances = torch.norm(
@@ -167,9 +162,6 @@ class LearnedSimulator(nn.Module):
         }
 
         return graph_tuple
-
-
-
 
     def _decoder_postprocessor(
         self,
@@ -210,22 +202,21 @@ class LearnedSimulator(nn.Module):
         return (acceleration - acceleration_mean) / acceleration_std
 
     def forward(
-            self,
-            position_sequence: torch.Tensor,
-            n_particles_per_example: torch.Tensor,
-            global_context: Optional[torch.Tensor] = None,
-            particle_types: Optional[torch.Tensor] = None
-        ) -> torch.Tensor:
-            """Forward pass: predict next position given sequence of previous positions."""
-            input_graphs_tuple = self._encoder_preprocessor(
-                position_sequence,
-                n_particles_per_example,
-                global_context,
-                particle_types
-            )
-            normalized_acceleration = self._graph_network(input_graphs_tuple)
-            return self._decoder_postprocessor(normalized_acceleration, position_sequence)
-
+        self,
+        position_sequence: torch.Tensor,
+        n_particles_per_example: torch.Tensor,
+        global_context: Optional[torch.Tensor] = None,
+        particle_types: Optional[torch.Tensor] = None
+    ) -> torch.Tensor:
+        """Forward pass: predict next position given sequence of previous positions."""
+        input_graphs_tuple = self._encoder_preprocessor(
+            position_sequence,
+            n_particles_per_example,
+            global_context,
+            particle_types
+        )
+        normalized_acceleration = self._graph_network(input_graphs_tuple)
+        return self._decoder_postprocessor(normalized_acceleration, position_sequence)
 
     def get_predicted_and_target_normalized_accelerations(
         self,
