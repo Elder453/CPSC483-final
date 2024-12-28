@@ -144,8 +144,8 @@ def eval_one_step(args: argparse.Namespace) -> None:
         raise ValueError("No checkpoint exists!")
     print(f"Load checkpoint from: {checkpoint_file}")
     
-    simulator_state_dict = torch.load(checkpoint_file, map_location=device)
-    simulator.load_state_dict(simulator_state_dict)
+    checkpoint = torch.load(checkpoint_file, map_location=device, weights_only=False)
+    simulator.load_state_dict(checkpoint['model_state_dict'])
 
     # Evaluation loop
     mse_loss = F.mse_loss
@@ -193,14 +193,15 @@ def eval_one_step(args: argparse.Namespace) -> None:
             loss_mse = mse_loss(pred_acceleration, target_acceleration)
             one_step_position_mse = mse_loss(predicted_next_position, target_next_position)
             total_loss.append(one_step_position_mse)
-            
-            print(f"step: {time_step}\t loss_mse: {loss_mse:.2f}\t "
-                  f"one_step_position_mse: {one_step_position_mse * 1e9:.2f}e-9.")
+            if time_step % 250 == 0:
+                print(f"Step: {time_step} | "
+                      f"Accel Loss MSE: {loss_mse:.3f} | "
+                      f"One Step Position MSE: {one_step_position_mse*1e9:.3f}e-9")
             time_step += 1
 
         # Calculate and print average loss
         average_loss = torch.tensor(total_loss).mean().item()
-        print(f"Average one step loss is: {average_loss * 1e9}e-9.")
+        print(f"Average one step loss is: {average_loss*1e9:.3f}e-9")
 
 def eval_rollout(args):
     """Evaluate model on trajectory rollouts."""
@@ -245,10 +246,10 @@ def eval_rollout(args):
     if not file_name:
         raise ValueError("No checkpoint exists!")
     else:
-        print(f"Load checkpoint from: {file_name}")
+        print(f"\nLoad checkpoint from: {file_name}")
 
-    simulator_state_dict = torch.load(file_name, map_location=device)
-    simulator.load_state_dict(simulator_state_dict)
+    checkpoint = torch.load(file_name, map_location=device, weights_only=False)
+    simulator.load_state_dict(checkpoint['model_state_dict'])
 
     # evaluation loop
     mse_loss = F.mse_loss
@@ -274,18 +275,18 @@ def eval_rollout(args):
                 rollout_op['ground_truth_rollout']
             )
             total_loss.append(loss_mse)
-            print(f"step: {time_step}\t rollout_loss_mse: {loss_mse * 1e3:.2f}e-3.")
+            print(f"Step: {time_step} | Rollout Loss MSE: {loss_mse:.3f}")
 
             # save rollout results
             file_name = f'rollout_{args.eval_split}_{time_step}.pkl'
             file_name = os.path.join(output_path, file_name)
-            print(f"Saving rollout file {time_step}.")
+            print(f"Saving rollout file {time_step}.\n")
             with open(file_name, 'wb') as file:
                 pickle.dump(rollout_op, file)
             time_step += 1
 
         average_loss = torch.tensor(total_loss).mean().item()
-        print(f"Average rollout loss is: {average_loss * 1e3:.2f}e-3.")
+        print(f"Average rollout loss is: {average_loss:.3f}")
 
 def get_elapsed_time(start_time):
     elapsed = time.time() - start_time
@@ -329,12 +330,12 @@ def train(args: argparse.Namespace) -> None:
     # "one-step" MSE periodically as in the original paper.
     valid_dataset = OneStepDataset(args.dataset, 'valid')
     num_valid_samples = len(valid_dataset)
-    eval_subset_size = min(5000, num_valid_samples) # Eval on ~15k samples
+    eval_subset_size = min(2000, num_valid_samples) # Eval on ~2k samples
 
     # Calculate steps and epochs
     steps_per_epoch = len(train_dataloader) # steps == batches
     total_steps = args.num_steps
-    validation_frequency = 5000
+    validation_frequency = 2500
     print(f"\nTraining for {args.num_steps} steps with {steps_per_epoch} steps per epoch")
     print(f"Validating every {validation_frequency} steps")
 
@@ -356,7 +357,7 @@ def train(args: argparse.Namespace) -> None:
     )
 
     # Learning rate schedule setup (exponential decay)
-    decay_steps = int(25e5)
+    decay_steps = int(1e5)
     min_lr = 1e-6
 
     # Optimization setup
@@ -374,9 +375,9 @@ def train(args: argparse.Namespace) -> None:
     val_mse_history = deque()
     val_steps_history = deque()
 
-    # Track validation improvement as in original GNS approach
-    patience = 150000
-    min_delta = 1e-6 # hyperparameter
+    # Track validation improvement
+    warmup = 5000
+    patience = 100
     steps_without_improvement = 0
 
     # Create fixed checkpoint path
@@ -437,7 +438,14 @@ def train(args: argparse.Namespace) -> None:
                 optimizer.step()
 
                 # Update LR with exp decay
-                current_lr = (args.lr - min_lr) * (0.1 ** (global_step / decay_steps)) + min_lr
+                if global_step < warmup:
+                    # Linear warmup
+                    current_lr = args.lr * (global_step / warmup)
+                else:
+                    # Exponential decay after warmup
+                    decay_progress = (global_step - warmup) / (decay_steps - warmup)
+                    current_lr = (args.lr - min_lr) * (0.1 ** decay_progress) + min_lr
+
                 for param_group in optimizer.param_groups:
                     param_group['lr'] = current_lr
 
@@ -456,9 +464,9 @@ def train(args: argparse.Namespace) -> None:
                 # Print progress every 250 steps
                 if global_step % 250 == 0:
                     print(f"{get_elapsed_time(start_time)} "
-                          f"Global Step: {global_step} | "
-                          f"Train Position MSE: {batch_pos_mse:.4e} | "
-                          f"Batch Accel MSE: {batch_loss_mse:.3f} | "
+                          f"Step: {global_step} | "
+                          f"Accel (Loss) MSE: {batch_loss_mse:.3f} | "
+                          f"Train Position MSE: {batch_pos_mse*1e9:.2f}e-9 | "
                           f"LR: {current_lr:.2e}")
 
                 if global_step % validation_frequency == 0 and global_step > 0:
@@ -469,7 +477,6 @@ def train(args: argparse.Namespace) -> None:
                         valid_subset, 
                         collate_fn=one_step_collate,
                         batch_size=args.batch_size,
-                        shuffle=False
                     )
 
                     val_losses = []
@@ -492,13 +499,13 @@ def train(args: argparse.Namespace) -> None:
                     mean_val_loss = float(np.mean(val_losses))
                     val_mse_history.append(mean_val_loss)
                     val_steps_history.append(global_step)
-                    print(f"{get_elapsed_time(start_time)} Validation One-step MSE: {mean_val_loss:.4e}")
+                    print(f"{get_elapsed_time(start_time)} Validation One-step MSE: {mean_val_loss*1e9:.3f}e-9")
 
                     # Check for improvement
-                    if mean_val_loss < (best_val_loss - min_delta):
+                    if mean_val_loss < best_val_loss:
                         best_val_loss = mean_val_loss
                         steps_without_improvement = 0
-                        print(f"New best validation MSE: {best_val_loss:.4e} -> Saving model...")
+                        print(f"New best validation MSE: {best_val_loss*1e9:.3f}e-9 -> Saving model...")
                         checkpoint = {
                             'model_state_dict': simulator.state_dict(),
                             'optimizer_state_dict': optimizer.state_dict(),
@@ -508,7 +515,7 @@ def train(args: argparse.Namespace) -> None:
                         }
                         torch.save(checkpoint, best_model_path)
                     else:
-                        steps_without_improvement += validation_frequency
+                        steps_without_improvement += 1
                         print(f"No improvement. Steps without improvement: {steps_without_improvement}/{patience}")
 
                     # Early stopping if patience is exceeded
@@ -521,21 +528,21 @@ def train(args: argparse.Namespace) -> None:
     except KeyboardInterrupt:
         print("\nTraining interrupted.")
         print(f"Saving current checkpoint - Step: {global_step}")
-        checkpoint = {
+    
+    print(f"\n{get_elapsed_time(start_time)} Training completed!")
+    print(f"Best loss achieved: {best_val_loss*1e9:.3f}e-9")
+    print(f"Best model saved at: {best_model_path}")
+    checkpoint = {
             'model_state_dict': simulator.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
             'global_step': global_step,
             'val_mse_history': list(val_mse_history),
             'val_steps_history': list(val_steps_history),
         }
-        torch.save(
-            checkpoint,
-            f'{checkpoint_dir}/interrupted_checkpoint.pt'
-        )
-
-    print(f"\n[{get_elapsed_time(start_time)}] Training completed!")
-    print(f"Best loss achieved: {best_val_loss:.4e}")
-    print(f"Best model saved at: {best_model_path}")
+    torch.save(
+        checkpoint,
+        f'{checkpoint_dir}/interrupted_checkpoint.pt'
+    )
 
 def parse_arguments():
     """Parse command line arguments organized by usage mode."""
