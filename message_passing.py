@@ -1,3 +1,5 @@
+# message_passing.py
+
 import torch
 import torch.nn as nn
 from torch_scatter import scatter

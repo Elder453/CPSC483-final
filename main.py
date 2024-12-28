@@ -1,8 +1,11 @@
+# main.py
+
 # Standard library imports
-import os
-import math
-import pickle
 import argparse
+import math
+import os
+import pickle
+import time
 from collections import deque
 from typing import Optional, Dict, Union, List
 
@@ -133,7 +136,7 @@ def eval_one_step(args: argparse.Namespace) -> None:
     checkpoint_path = f'{args.model_path}/{args.dataset}/{args.gnn_type}'
     checkpoint_file = None
     for file in os.listdir(checkpoint_path):
-        if file.startswith('lowest_train_mse'):
+        if file.startswith('best_val_mse'):
             checkpoint_file = os.path.join(checkpoint_path, file)
             break
     
@@ -235,7 +238,7 @@ def eval_rollout(args):
     file_name = None
 
     for file in files:
-        if file.startswith('lowest_train_mse'):
+        if file.startswith('best_val_mse'):
             file_name = os.path.join(model_path, file)
             break
 
@@ -284,15 +287,12 @@ def eval_rollout(args):
         average_loss = torch.tensor(total_loss).mean().item()
         print(f"Average rollout loss is: {average_loss * 1e3:.2f}e-3.")
 
-def get_lr_scheduler(optimizer, warmup_steps: int, total_steps: int):
-    """Creates learning rate scheduler with warmup."""
-    def lr_lambda(current_step):
-        if current_step < warmup_steps:
-            return float(current_step) / float(max(1, warmup_steps))
-        progress = float(current_step - warmup_steps) / float(max(1, total_steps - warmup_steps))
-        return 0.5 * (1.0 + math.cos(math.pi * progress))
-    
-    return LambdaLR(optimizer, lr_lambda)
+def get_elapsed_time(start_time):
+    elapsed = time.time() - start_time
+    hours = int(elapsed // 3600)
+    minutes = int((elapsed % 3600) // 60)
+    seconds = int(elapsed % 60)
+    return f"[{hours:02d}:{minutes:02d}:{seconds:02d}]"
 
 def train(args: argparse.Namespace) -> None:
     """Train the simulator model.
@@ -308,7 +308,7 @@ def train(args: argparse.Namespace) -> None:
             - noise_std: Standard deviation for noise injection
             - lr: Initial learning rate
             - weight_decay: Weight decay for optimizer
-            - num_epochs: Number of training epochs
+            - num_steps: Number of training steps
             - test_step: Steps between validation
             - model_path: Path to save model checkpoints
             - message_passing_steps: Number of message passing steps
@@ -325,11 +325,18 @@ def train(args: argparse.Namespace) -> None:
         shuffle=True
     )
 
+    # Add a small portion of the valid split to evaluate 
+    # "one-step" MSE periodically as in the original paper.
+    valid_dataset = OneStepDataset(args.dataset, 'valid')
+    num_valid_samples = len(valid_dataset)
+    eval_subset_size = min(5000, num_valid_samples) # Eval on ~15k samples
+
     # Calculate steps and epochs
     steps_per_epoch = len(train_dataloader) # steps == batches
-    total_steps = args.num_epochs * steps_per_epoch
-    print(f"\nTraining for {args.num_epochs} epochs with {steps_per_epoch} steps per epoch")
-    print(f"Total training steps: {total_steps}")
+    total_steps = args.num_steps
+    validation_frequency = 5000
+    print(f"\nTraining for {args.num_steps} steps with {steps_per_epoch} steps per epoch")
+    print(f"Validating every {validation_frequency} steps")
 
     # Model initialization
     metadata = _read_metadata(data_path=f"datasets/{args.dataset}")
@@ -348,44 +355,44 @@ def train(args: argparse.Namespace) -> None:
         args=args
     )
 
+    # Learning rate schedule setup (exponential decay)
+    decay_steps = int(25e5)
+    min_lr = 1e-6
+
     # Optimization setup
-    optimizer = torch.optim.AdamW(
+    optimizer = torch.optim.Adam(
         simulator.parameters(),
         lr=args.lr,
         weight_decay=args.weight_decay,
-        betas=(0.9, 0.999)
     )
 
-    # Learning rate scheduler setup
-    warmup_steps = min(500, total_steps // 10)  # 10% of total steps or 1000, whichever is smaller
-    scheduler = get_lr_scheduler(optimizer, warmup_steps, total_steps)
-
     mse_loss = F.mse_loss
-    max_grad_norm = 1.0
-    best_train_loss = float("inf")
+    best_val_loss = float("inf")
     global_step = 0
 
-    # Early stopping setup
-    patience = 500  # Number of steps to wait for improvement
-    min_delta = 1e-11  # Minimum change in loss to qualify as an improvement
+    # Loss tracking setup
+    val_mse_history = deque()
+    val_steps_history = deque()
+
+    # Track validation improvement as in original GNS approach
+    patience = 150000
+    min_delta = 1e-6 # hyperparameter
     steps_without_improvement = 0
-    
-    # Loss smoothing setup
-    smoothing_window = 100
-    loss_deque = deque(maxlen=smoothing_window)
 
     # Create fixed checkpoint path
     checkpoint_dir = f'{args.model_path}/{args.dataset}/{args.gnn_type}'
-    best_model_path = f'{checkpoint_dir}/lowest_train_mse.pt'
+    os.makedirs(checkpoint_dir, exist_ok=True)
+    best_model_path = f'{checkpoint_dir}/best_val_mse.pt'
 
+    start_time = time.time()
     # Training loop
-    print("\Starting training...")
+    print("\nStarting training...")
     try:
-        for epoch in range(args.num_epochs):
-            print(f'Starting Epoch [{epoch+1}/{args.num_epochs}]')
-            simulator.train()
-
+        while global_step < args.num_steps:
             for features, labels in train_dataloader:
+                if global_step >= total_steps:
+                    break
+                
                 # Move data to device
                 labels = labels.to(device)
                 target_next_position = labels
@@ -405,8 +412,10 @@ def train(args: argparse.Namespace) -> None:
                 noise_mask = non_kinematic_mask.unsqueeze(1).unsqueeze(2)
                 sampled_noise *= noise_mask
 
-                # Forward pass and loss calculation
+                simulator.train()
                 optimizer.zero_grad()
+
+                # Forward pass and loss calculation
                 pred_target = simulator.get_predicted_and_target_normalized_accelerations(
                     next_position=target_next_position,
                     position_sequence=features['positions'],
@@ -417,74 +426,115 @@ def train(args: argparse.Namespace) -> None:
                 )
                 pred_acceleration, target_acceleration = pred_target
 
-                # Calculate loss
-                loss = (pred_acceleration[non_kinematic_mask] - 
-                    target_acceleration[non_kinematic_mask]) ** 2
+                # Calculate loss on non-kinematic particles
+                loss = (pred_acceleration[non_kinematic_mask] - target_acceleration[non_kinematic_mask]) ** 2
                 num_non_kinematic = torch.sum(non_kinematic_mask.to(torch.float32))
                 loss = torch.sum(loss) / torch.sum(num_non_kinematic)
 
                 # Optimization step
-                loss.mean().backward()
-                clip_grad_norm_(simulator.parameters(), max_grad_norm)
+                loss.backward()
+                clip_grad_norm_(simulator.parameters(), 1.0)
                 optimizer.step()
-                scheduler.step()
 
-                predicted_next_position = simulator(
-                    position_sequence=features['positions'],
-                    n_particles_per_example=features['n_particles_per_example'],
-                    particle_types=features['particle_types'],
-                    global_context=features.get('step_context')
-                )
-                position_mse = mse_loss(predicted_next_position, target_next_position)
+                # Update LR with exp decay
+                current_lr = (args.lr - min_lr) * (0.1 ** (global_step / decay_steps)) + min_lr
+                for param_group in optimizer.param_groups:
+                    param_group['lr'] = current_lr
 
-                # track loss history for convergence check
-                loss_deque.append(position_mse.item())
-                if len(loss_deque) == smoothing_window:
-                    smoothed_loss = sum(loss_deque) / len(loss_deque)
-
-                    # check for improvement
-                    if smoothed_loss < best_train_loss - min_delta:
-                        best_train_loss = smoothed_loss
-                        steps_without_improvement = 0
-                        print(f"\nSaving new best model - Step: {global_step}, "
-                              f"Training MSE: {smoothed_loss:.4e}\n")
-                        torch.save(simulator.state_dict(), best_model_path)
-                else:
-                    steps_without_improvement += 1
-                
-                # print progress and update LR every 100 steps
-                if global_step % 100 == 0:
-                    current_lr = scheduler.get_last_lr()[0]
-                    smoothed_loss = sum(loss_deque) / len(loss_deque) if loss_deque else position_mse.item()
-                    print(f'Step [{global_step}/{total_steps}] '
-                          f'Loss: {loss.item():.4f} MSE: {smoothed_loss:.4e}')
-
-                    # Save checkpoints
-                    torch.save(
-                        simulator.state_dict(),
-                        f'{checkpoint_dir}/checkpoint.pt'
+                # For logging: compute position MSE
+                simulator.eval()
+                with torch.no_grad():
+                    predicted_next_position = simulator(
+                        position_sequence=features['positions'],
+                        n_particles_per_example=features['n_particles_per_example'],
+                        particle_types=features['particle_types'],
+                        global_context=features.get('step_context')
                     )
-                
-                if steps_without_improvement >= patience:
-                    print(f"\nEarly stopping triggered - No improvement for {patience} steps")
-                    return
+                    batch_loss_mse = mse_loss(pred_acceleration, target_acceleration).item()
+                    batch_pos_mse = mse_loss(predicted_next_position, target_next_position).item()
+
+                # Print progress every 250 steps
+                if global_step % 250 == 0:
+                    print(f"{get_elapsed_time(start_time)} "
+                          f"Global Step: {global_step} | "
+                          f"Train Position MSE: {batch_pos_mse:.4e} | "
+                          f"Batch Accel MSE: {batch_loss_mse:.3f} | "
+                          f"LR: {current_lr:.2e}")
+
+                if global_step % validation_frequency == 0 and global_step > 0:
+                    simulator.eval()
+                    valid_indices = np.random.choice(num_valid_samples, eval_subset_size, replace=False)
+                    valid_subset = Subset(valid_dataset, valid_indices)
+                    val_dataloader = DataLoader(
+                        valid_subset, 
+                        collate_fn=one_step_collate,
+                        batch_size=args.batch_size,
+                        shuffle=False
+                    )
+
+                    val_losses = []
+                    with torch.no_grad():
+                        for vfeat, vlabels in val_dataloader:
+                            vlabels = vlabels.to(device)
+                            for key in ['positions', 'particle_types', 'n_particles_per_example']:
+                                vfeat[key] = vfeat[key].to(device)
+                            if 'step_context' in vfeat:
+                                vfeat['step_context'] = vfeat['step_context'].to(device)
+
+                            vpred = simulator(
+                                position_sequence=vfeat['positions'],
+                                n_particles_per_example=vfeat['n_particles_per_example'],
+                                particle_types=vfeat['particle_types'],
+                                global_context=vfeat.get('step_context')
+                            )
+                            val_losses.append(mse_loss(vpred, vlabels).item())
+
+                    mean_val_loss = float(np.mean(val_losses))
+                    val_mse_history.append(mean_val_loss)
+                    val_steps_history.append(global_step)
+                    print(f"{get_elapsed_time(start_time)} Validation One-step MSE: {mean_val_loss:.4e}")
+
+                    # Check for improvement
+                    if mean_val_loss < (best_val_loss - min_delta):
+                        best_val_loss = mean_val_loss
+                        steps_without_improvement = 0
+                        print(f"New best validation MSE: {best_val_loss:.4e} -> Saving model...")
+                        checkpoint = {
+                            'model_state_dict': simulator.state_dict(),
+                            'optimizer_state_dict': optimizer.state_dict(),
+                            'global_step': global_step,
+                            'val_mse_history': list(val_mse_history),
+                            'val_steps_history': list(val_steps_history),
+                        }
+                        torch.save(checkpoint, best_model_path)
+                    else:
+                        steps_without_improvement += validation_frequency
+                        print(f"No improvement. Steps without improvement: {steps_without_improvement}/{patience}")
+
+                    # Early stopping if patience is exceeded
+                    if steps_without_improvement >= patience:
+                        print("\nEarly stopping triggered - No improvement on validation set.")
+                        return
                 
                 global_step += 1
-
-            current_lr = scheduler.get_last_lr()[0]
-            print(f"Epoch {epoch + 1} completed - Current LR: {current_lr:.2e}")
     
     except KeyboardInterrupt:
         print("\nTraining interrupted.")
-        print(f"Saving current checkpoint - Step: {global_step}, "
-              f"Training MSE: {position_mse:.4e}")
+        print(f"Saving current checkpoint - Step: {global_step}")
+        checkpoint = {
+            'model_state_dict': simulator.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+            'global_step': global_step,
+            'val_mse_history': list(val_mse_history),
+            'val_steps_history': list(val_steps_history),
+        }
         torch.save(
-            simulator.state_dict(),
-            f'{checkpoint_dir}/checkpoint.pt'
+            checkpoint,
+            f'{checkpoint_dir}/interrupted_checkpoint.pt'
         )
-    
-    print("\nTraining completed!")
-    print(f"Best loss achieved: {best_train_loss:.4e}")
+
+    print(f"\n[{get_elapsed_time(start_time)}] Training completed!")
+    print(f"Best loss achieved: {best_val_loss:.4e}")
     print(f"Best model saved at: {best_model_path}")
 
 def parse_arguments():
@@ -512,8 +562,8 @@ def parse_arguments():
     
     # Training-specific arguments
     train_group = parser.add_argument_group('Training Arguments (only used when mode=train)')
-    train_group.add_argument('--num_epochs', default=10, type=int,
-                        help='Maximum number of training epochs.')
+    train_group.add_argument('--num_steps', default=2e7, type=int,
+                        help='Maximum number of training steps.')
     train_group.add_argument('--seed', type=int, default=483,
                         help='Random seed for reproducibility.')
     train_group.add_argument('--lr', type=float, default=1e-4,
