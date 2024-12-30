@@ -4,13 +4,53 @@ from matplotlib import animation
 import matplotlib.pyplot as plt
 import numpy as np
 
+TYPE_TO_COLOR = {
+    3: "black",   # Boundary particles.
+    0: "green",   # Rigid solids.
+    7: "magenta", # Goop.
+    6: "gold",    # Sand.
+    5: "blue",    # Water.
+}
+
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Render rollout.")
     parser.add_argument(
-        '--rollout_path',
-        default=None,
+        '--output_path',
+        default="rollouts",
         type=str,
-        help='Path to rollout pickle file.'
+        help='Base output directory for rollouts.'
+    )
+    parser.add_argument(
+        '--dataset',
+        required=True,
+        type=str,
+        help='Name of the dataset used in training.'
+    )
+    parser.add_argument(
+        '--gnn_type',
+        required=True,
+        type=str,
+        choices=['gcn', 'gat', 'trans_gnn', 'interaction_net'],
+        help='Type of GNN used.'
+    )
+    parser.add_argument(
+        '--loss_type',
+        required=True,
+        type=str,
+        choices=['one_step', 'multi_step'],
+        help='Loss type used in training.'
+    )
+    parser.add_argument(
+        '--eval_split',
+        default='test',
+        choices=['train', 'valid', 'test'],
+        help='Dataset split to use for evaluation.'
+    )
+    parser.add_argument(
+        '--time_step',
+        default=0,
+        type=int,
+        help='ID for rollout pkl file.'
     )
     parser.add_argument(
         '--step_stride',
@@ -26,21 +66,13 @@ def parse_arguments():
     )
 
     args = parser.parse_args()
-
+    args.rollout_path = f"{args.output_path}/{args.dataset}/{args.gnn_type}/{args.loss_type}/{args.eval_split}"
     return args
-
-TYPE_TO_COLOR = {
-    3: "black",   # Boundary particles.
-    0: "green",   # Rigid solids.
-    7: "magenta", # Goop.
-    6: "gold",    # Sand.
-    5: "blue",    # Water.
-}
 
 def main(args):
     if not args.rollout_path:
         raise ValueError("A `rollout_path` must be passed.")
-    with open(args.rollout_path, 'rb') as file:
+    with open(f"{args.rollout_path}/{args.time_step}.pkl", 'rb') as file:
         rollout_data = pickle.load(file)
 
     fig, axes = plt.subplots(1, 2, figsize=(10, 5))
@@ -84,7 +116,7 @@ def main(args):
         frames=np.arange(0, num_steps, args.step_stride),
         interval=10
     )
-    anim.save("rollout.gif", writer='imagemagick', fps=10)
+    anim.save(f"{args.rollout_path}/{args.time_step}.gif", writer='imagemagick', fps=10)
     # plt.show(block=args.block_on_show)
 
 if __name__ == '__main__':

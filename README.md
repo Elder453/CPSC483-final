@@ -8,7 +8,7 @@ The system learns to simulate particle-based physics by using Graph Neural Netwo
 
 ## Features
 
-- Multiple GNN architectures (e.g., GCN and GAT)
+- Multiple GNN architectures (e.g. interaction networks and GAT)
 - Single-step and rollout predictions
 - Support for different particle types
 - Noise injection for robustness
@@ -27,6 +27,7 @@ cd CPSC483-final
 ```bash
 conda env create -f environment.yml
 ```
+  **Note**: CUDA-specific versions of PyTorch and TensorFlow may need to be installed manually depending on your system’s GPU and CUDA version. Refer to the [PyTorch installation guide](https://pytorch.org/get-started/locally/) and [TensorFlow](https://www.tensorflow.org/install) installation guide for details.
 
 3. Create necessary directories:
 ```bash
@@ -48,54 +49,36 @@ bash ./download_dataset.sh WaterDropSample ./datasets
 
 Train a model with default parameters:
 ```bash
-python main.py 
-  --mode=train \
-  --dataset=Water \
-  --batch_size=2 \
-  --model_path="models" \
-  --gnn_type="gcn" \
-  --message_passing_steps=10 \
-  --noise_std=0.0003 \
-  --num_epochs=10 \
-  --seed=483 \
-  --lr=1e-4 \
-  --weight_decay=0
+bash ./train.sh
 ```
 
 ### Evaluation
 
 Evaluate single-step predictions:
 ```bash
-python main.py --mode eval \
-  --dataset=WaterDropSample \
-  --message_passing_steps=5 \
-  --eval_split=test
+bash ./eval.sh
 ```
 
 Generate trajectory rollouts:
 ```bash
-python main.py --mode eval_rollout \
-  --dataset=WaterDropSample \
-  --message_passing_steps=5 \
-  --eval_split=test
+bash ./eval_rollout.sh
 ```
 
 Animate trajectory rollouts:
 ```bash
-python render_rollout.py \
-  --rollout_path=rollouts/{dataset}/{model}/rollout_{split}_{num}.pkl \
-  --step_stride=3 \
-  --block_on_show=True
+bash ./render_rollout.sh
 ```
 
 ## Key Parameters
+
+Within each `bash` script, there are various parameters that may be tuned or customized for usage. For convenience, we have provided a bash script for each of the core functionalities with default behavior; please modify those scripts directly or use the command line for customization deviating from the default behavior (`train.sh`, `eval.sh`, `eval_rollout.sh`, `render_rollout.sh`).
 
 - `--mode`: Training or evaluation mode (`train`, `eval`, `eval_rollout`)
 - `--dataset`: Name of dataset to use
 - `--batch_size`: Number of samples per batch
 - `--num_epochs`: Number of training epochs
 - `--message_passing_steps`: Number of GNN message passing steps
-- `--gnn_type`: Type of GNN to use (`gcn`, `gat`)
+- `--gnn_type`: Type of GNN to use (`interaction_net`, `gcn`, `gat`)
 - `--noise_std`: Standard deviation of noise injection
 - `--lr`: Learning rate
 
@@ -105,24 +88,25 @@ python render_rollout.py \
 /CPSC483-final/
 ├── datasets/           # Dataset storage
 │   └── WaterDropSample/
-├── models/            # Saved model checkpoints
+├── models/             # Saved model checkpoints
 │   └── WaterDropSample/
-└── rollouts/          # Generated rollouts
+└── rollouts/           # Generated rollouts
     └── WaterDropSample/
 ```
 
 ## Notes
 
-- The code assumes CUDA availability. For CPU-only usage, modify device settings accordingly.
+- The code assumes CUDA availability. For CPU-only usage, modify device settings and `environment.yml` accordingly.
 - Training time varies based on dataset size and computational resources.
-- Best checkpoints are automatically saved during training.
+- Best validation checkpoints are automatically saved during training.
 - Parameters may need adjustment based on your specific use case.
 
 ## Acknowledgments
 
-This PyTorch implementation is adapted from [Learn-to-Simulate](https://github.com/Emiyalzn/Learn-to-Simulate/tree/main). We thank the original authors for their work.
+This PyTorch implementation builds upon [Learn-to-Simulate](https://github.com/Emiyalzn/Learn-to-Simulate/tree/main), which translated the original TensorFlow codebase into PyTorch. We extend our gratitude to the authors for their foundational work.
 
-The original work was done by [DeepMind](https://github.com/deepmind/deepmind-research), written in TensorFlow and published at ICML2020.
+The original TensorFlow implementation was developed by [DeepMind](https://github.com/deepmind/deepmind-research) and published at ICML 2020. The research paper is titled “Learning to Simulate Complex Physics with Graph Networks” and can be accessed on [arXiv](https://arxiv.org/abs/2002.09405).
+
 
 ```shell
 @article

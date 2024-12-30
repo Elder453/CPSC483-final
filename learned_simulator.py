@@ -4,9 +4,11 @@ import torch
 import torch.nn as nn
 from typing import List, Dict, Optional, Tuple, NamedTuple
 import numpy as np
+
 from connectivity_utils import compute_connectivity_for_batch
-from graph_network import EncodeProcessDecode
 from dataloader import NCDataset
+from graph_network import EncodeProcessDecode
+from utils import compute_multi_step_loss
 
 STD_EPSILON = 1e-8
 INPUT_SEQUENCE_LENGTH = 6
@@ -95,7 +97,7 @@ class LearnedSimulator(nn.Module):
 
         # Compute connectivity graph
         senders, receivers, n_edge = compute_connectivity_for_batch(
-            most_recent_position.cpu().numpy(),
+            most_recent_position.detach().cpu().numpy(),
             n_node.cpu().numpy(),
             self._connectivity_radius,
             velocity_sequence.device
@@ -250,3 +252,80 @@ class LearnedSimulator(nn.Module):
         )
         
         return predicted_normalized_acceleration, target_normalized_acceleration
+
+    # def compute_multi_step_predictions(
+    #     self,
+    #     position_sequence: torch.Tensor,
+    #     target_next_position: torch.Tensor,
+    #     n_particles_per_example: torch.Tensor,
+    #     n_steps: int,
+    #     particle_types: Optional[torch.Tensor] = None,
+    #     global_context: Optional[torch.Tensor] = None
+    # ) -> Tuple[List[torch.Tensor], List[torch.Tensor]]:
+    #     """Compute predictions and targets for multiple simulation steps.
+        
+    #     Makes initial prediction using ground truth positions, then rolls out
+    #     additional steps using the model's own predictions as input. Used for
+    #     multi-step loss computation during training.
+        
+    #     Args:
+    #         position_sequence: Initial position sequence [num_particles, num_timesteps, dims]
+    #         target_next_position: Target next position [num_particles, dims]
+    #         n_particles_per_example: Number of particles per example [batch_size]
+    #         n_steps: Number of additional steps to predict after initial step 
+    #         particle_types: Optional particle type indices [num_particles]
+    #         global_context: Optional global features per timestep
+            
+    #     Returns:
+    #         Tuple of:
+    #             - List of predicted accelerations [n_steps + 1]
+    #             - List of target accelerations [n_steps + 1]
+    #             Each acceleration tensor has shape [num_particles, dims]
+    #     """
+    #     pred_accelerations = []
+    #     target_accelerations = []
+    #     current_positions = position_sequence
+
+    #     # Initial step uses ground truth positions
+    #     initial_pred = self.get_predicted_and_target_normalized_accelerations(
+    #         next_position=target_next_position,  # Target is last position
+    #         position_sequence=position_sequence,
+    #         position_sequence_noise=torch.zeros_like(position_sequence),  # Effectively None; no noise needed for multi-step
+    #         n_particles_per_example=n_particles_per_example,
+    #         particle_types=particle_types,
+    #         global_context=global_context
+    #     )
+    #     pred_accel_initial, target_accel_initial = initial_pred
+    #     pred_accelerations.append(pred_accel_initial)
+    #     target_accelerations.append(target_accel_initial)
+
+    #     # Additional steps use model's own predictions
+    #     for _ in range(n_steps):
+    #         # Predict next positions using current sequence
+    #         next_position = self(
+    #             position_sequence=current_positions,
+    #             n_particles_per_example=n_particles_per_example,
+    #             particle_types=particle_types,
+    #             global_context=global_context
+    #         )
+
+    #         # Update position sequence by removing oldest and adding prediction
+    #         current_positions = torch.cat([
+    #             current_positions[:, 1:],   # Remove oldest position
+    #             next_position.unsqueeze(1)  # Add predicted position
+    #         ], dim=1)
+
+    #         # Get accelerations for next step
+    #         step_pred = self.get_predicted_and_target_normalized_accelerations(
+    #             next_position=next_position,
+    #             position_sequence=current_positions,
+    #             position_sequence_noise=torch.zeros_like(current_positions),
+    #             n_particles_per_example=n_particles_per_example,
+    #             particle_types=particle_types,
+    #             global_context=global_context
+    #         )
+    #         pred_accel, target_accel = step_pred
+    #         pred_accelerations.append(pred_accel)
+    #         target_accelerations.append(target_accel)
+
+    #     return pred_accelerations, target_accelerations

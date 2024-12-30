@@ -34,6 +34,10 @@ def rollout(
     ground_truth_positions = features['positions'][:, INPUT_SEQUENCE_LENGTH:]
     global_context = features.get('step_context')
 
+    # Store acceleration
+    predicted_accelerations = []
+    target_accelerations = []
+
     def step_fn(
         step: int,
         current_positions: Tensor,
@@ -63,6 +67,21 @@ def rollout(
             global_context=global_context_step
         )
 
+        # Compute accelerations for current step
+        pred_target = simulator.get_predicted_and_target_normalized_accelerations(
+            next_position=ground_truth_positions[:, step],  # Target position
+            position_sequence=current_positions,
+            position_sequence_noise=torch.zeros_like(current_positions),  # No noise during rollout
+            n_particles_per_example=features['n_particles_per_example'],
+            particle_types=features['particle_types'],
+            global_context=global_context_step
+        )
+        pred_accel, target_accel = pred_target
+        
+        # Store acceleration data
+        predicted_accelerations.append(pred_accel)
+        target_accelerations.append(target_accel)
+
         # Apply kinematic constraints
         kinematic_mask = get_kinematic_mask(features['particle_types']).unsqueeze(1).tile(2)
         next_position_ground_truth = ground_truth_positions[:, step]
@@ -71,7 +90,7 @@ def rollout(
 
         # Update position sequence
         next_positions = torch.cat([
-            current_positions[:, 1:],  # Remove oldest position
+            current_positions[:, 1:],   # Remove oldest position
             next_position.unsqueeze(1)  # Add new position
         ], dim=1)
 
@@ -93,6 +112,8 @@ def rollout(
         'predicted_rollout': torch.stack(predictions),
         'ground_truth_rollout': torch.transpose(ground_truth_positions, 0, 1),
         'particle_types': features['particle_types'],
+        'predicted_accelerations': torch.stack(predicted_accelerations),
+        'target_accelerations': torch.stack(target_accelerations),
     }
 
     if global_context is not None:

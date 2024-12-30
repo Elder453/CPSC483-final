@@ -108,7 +108,6 @@ class EncodeProcessDecode(nn.Module):
                 processor = GraphNetwork(
                     edge_model=EdgeModel(self._build_mlp_with_layer_norm(self._latent_size * 3)),
                     node_model=NodeModel(self._build_mlp_with_layer_norm(self._latent_size * 2)),
-                    global_model=None
                 ).to(self.device)
             else:
                 raise ValueError(f"Unsupported GNN type: {self.args.gnn_type}")

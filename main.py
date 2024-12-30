@@ -15,7 +15,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.utils import clip_grad_norm_
-from torch.optim.lr_scheduler import LambdaLR
 from torch.utils.data import DataLoader, Subset
 
 # Local imports
@@ -23,16 +22,24 @@ from learned_simulator import LearnedSimulator
 from noise_utils import get_random_walk_noise_for_position_sequence
 from dataloader import OneStepDataset, RolloutDataset, one_step_collate
 from rollout import rollout
+from eval_utils import (
+    compute_one_step_metrics,
+    compute_mse_n,
+    compute_mse_full,
+    compute_emd
+)
 from utils import (
-    fix_seed,
     _combine_std,
     _read_metadata,
+    compute_multi_step_loss,
+    device,
+    fix_seed,
+    get_elapsed_time,
     get_kinematic_mask,
     print_args,
     Stats,
-    NUM_PARTICLE_TYPES,
     INPUT_SEQUENCE_LENGTH,
-    device
+    NUM_PARTICLE_TYPES
 )
 
 def _get_simulator(
@@ -85,7 +92,7 @@ def _get_simulator(
     )
     return simulator
 
-def eval_one_step(args: argparse.Namespace) -> None:
+def eval(args: argparse.Namespace) -> None:
     """Evaluate model on single-step predictions.
     
     Loads a trained model and evaluates its performance on single-step predictions
@@ -105,15 +112,6 @@ def eval_one_step(args: argparse.Namespace) -> None:
     Raises:
         ValueError: If no model checkpoint is found
     """
-    # Data setup
-    sequence_dataset = OneStepDataset(args.dataset, args.eval_split)
-    sequence_dataloader = DataLoader(
-        sequence_dataset, 
-        collate_fn=one_step_collate, 
-        batch_size=args.batch_size, 
-        shuffle=False
-    )
-
     # Model initialization
     metadata = _read_metadata(data_path=f"datasets/{args.dataset}")
     model_kwargs = dict(
@@ -133,75 +131,124 @@ def eval_one_step(args: argparse.Namespace) -> None:
     )
     
     # Load model checkpoint
-    checkpoint_path = f'{args.model_path}/{args.dataset}/{args.gnn_type}'
+    checkpoint_path = f'{args.model_path}/{args.dataset}/{args.gnn_type}/{args.loss_type}'
     checkpoint_file = None
     for file in os.listdir(checkpoint_path):
-        if file.startswith('best_val_mse'):
+        if file.startswith('best'):
             checkpoint_file = os.path.join(checkpoint_path, file)
             break
     
     if not checkpoint_file:
         raise ValueError("No checkpoint exists!")
-    print(f"Load checkpoint from: {checkpoint_file}")
+    print(f"\nLoad checkpoint from: {checkpoint_file}")
     
     checkpoint = torch.load(checkpoint_file, map_location=device, weights_only=False)
     simulator.load_state_dict(checkpoint['model_state_dict'])
 
     # Evaluation loop
-    mse_loss = F.mse_loss
-    total_loss = []
+    metrics = {
+        'mse_acc_1': [],
+        'mse_pos_1': [],
+    }
     time_step = 0
+    simulator.eval()
 
-    print("################### Begin Evaluate One Step #######################")
+    # Compute one-step metrics using OneStepDataset
+    print("\nComputing one-step metrics...")
+    one_step_dataset = OneStepDataset(args.dataset, args.eval_split)
+    one_step_dataloader = DataLoader(
+        one_step_dataset,
+        collate_fn=one_step_collate,
+        batch_size=args.batch_size,
+        shuffle=False
+    )
+
     with torch.no_grad():
-        for features, labels in sequence_dataloader:
+        for features, labels in one_step_dataloader:
             # Move data to device
             labels = labels.to(device)
-            target_next_position = labels
-            
-            # Move features to device
-            features['positions'] = features['positions'].to(device)
-            features['particle_types'] = features['particle_types'].to(device)
-            features['n_particles_per_example'] = features['n_particles_per_example'].to(device)
+            for key in ['positions', 'particle_types', 'n_particles_per_example']:
+                features[key] = features[key].to(device)
             if 'step_context' in features:
                 features['step_context'] = features['step_context'].to(device)
-
-            # Generate noise and get predictions
-            sampled_noise = get_random_walk_noise_for_position_sequence(
-                features['positions'],
-                noise_std_last_step=args.noise_std
-            ).to(device)
-
-            predicted_next_position = simulator(
-                position_sequence=features['positions'],
-                n_particles_per_example=features['n_particles_per_example'],
-                particle_types=features['particle_types'],
-                global_context=features.get('step_context')
+            
+            # Compute MSE1 metrics -- no noise added
+            mse_pos_1, mse_acc_1 = compute_one_step_metrics(
+                simulator, features, labels
             )
+            
+            metrics['mse_acc_1'].append(mse_acc_1)
+            metrics['mse_pos_1'].append(mse_pos_1)
 
-            pred_target = simulator.get_predicted_and_target_normalized_accelerations(
-                next_position=target_next_position,
-                position_sequence=features['positions'],
-                position_sequence_noise=sampled_noise,
-                n_particles_per_example=features['n_particles_per_example'],
-                particle_types=features['particle_types'],
-                global_context=features.get('step_context')
-            )
-            pred_acceleration, target_acceleration = pred_target
-
-            # Calculate losses
-            loss_mse = mse_loss(pred_acceleration, target_acceleration)
-            one_step_position_mse = mse_loss(predicted_next_position, target_next_position)
-            total_loss.append(one_step_position_mse)
-            if time_step % 250 == 0:
+            if time_step % 200 == 0:
                 print(f"Step: {time_step} | "
-                      f"Accel Loss MSE: {loss_mse:.3f} | "
-                      f"One Step Position MSE: {one_step_position_mse*1e9:.3f}e-9")
+                      f"MSE-acc 1: {mse_acc_1:.3e} | "
+                      f"MSE-pos 1: {mse_pos_1*1e9:.3f}e-9")
             time_step += 1
 
-        # Calculate and print average loss
-        average_loss = torch.tensor(total_loss).mean().item()
-        print(f"Average one step loss is: {average_loss*1e9:.3f}e-9")
+    # Compute trajectory metrics using RolloutDataset
+    if args.compute_all_metrics:
+        print("\nComputing trajectory metrics...")
+        rollout_dataset = RolloutDataset(args.dataset, args.eval_split)
+        rollout_dataloader = DataLoader(
+            rollout_dataset,
+            collate_fn=one_step_collate,
+            batch_size=1,
+            shuffle=False
+        )
+
+        metrics.update({
+            'mse_pos_20': [],
+            'mse_acc_20': [],
+            'mse_pos_400': [],
+            'mse_acc_400': [],
+            'emd': []
+        })
+        time_step = 0
+
+        with torch.no_grad():
+            for features, labels in rollout_dataloader:
+                # Move data to device
+                labels = labels.to(device)
+                for key in ['positions', 'particle_types', 'n_particles_per_example']:
+                    features[key] = features[key].to(device)
+                if 'step_context' in features:
+                    features['step_context'] = features['step_context'].to(device)
+
+                # Run rollout
+                num_steps = metadata['sequence_length'] - INPUT_SEQUENCE_LENGTH
+                rollout_op = rollout(simulator, features, num_steps)
+                rollout_op['metadata'] = metadata
+                
+                # Compute trajectory metrics
+                mse_pos_20, mse_acc_20 = compute_mse_n(
+                    simulator, features, rollout_op, n_frames=20
+                )
+                mse_pos_400, mse_acc_400 = compute_mse_full(
+                    simulator, features, rollout_op
+                )
+                emd = compute_emd(simulator, features, rollout_op)
+                
+                # Store metrics
+                metrics['mse_pos_20'].append(mse_pos_20)
+                metrics['mse_acc_20'].append(mse_acc_20)
+                metrics['mse_pos_400'].append(mse_pos_400)
+                metrics['mse_acc_400'].append(mse_acc_400)
+                metrics['emd'].append(emd)
+
+                print(f"Step: {time_step} | "
+                        f"MSE-pos 20: {mse_pos_20:.3e} | "
+                        f"MSE-acc 20: {mse_acc_20:.3e} | "
+                        f"MSE-pos 400: {mse_pos_400:.3e} | "
+                        f"MSE-acc 400: {mse_acc_400:.3e} | "
+                        f"EMD: {emd:.3e}")
+                time_step += 1
+
+    # Average metrics
+    print("\nAverage metrics across all evaluations:")
+    for key in metrics:
+        avg_value = np.mean(metrics[key])
+        print(f"{key}: {avg_value:.3e}")
 
 def eval_rollout(args):
     """Evaluate model on trajectory rollouts."""
@@ -233,8 +280,9 @@ def eval_rollout(args):
     num_steps = metadata['sequence_length'] - INPUT_SEQUENCE_LENGTH
 
     # load model checkpoint
-    model_path = f'{args.model_path}/{args.dataset}/{args.gnn_type}'
-    output_path = f'{args.output_path}/{args.dataset}/{args.gnn_type}'
+    model_path = f'{args.model_path}/{args.dataset}/{args.gnn_type}/{args.loss_type}'
+    output_path = f'{args.output_path}/{args.dataset}/{args.gnn_type}/{args.loss_type}/{args.eval_split}'
+    os.makedirs(output_path, exist_ok=True)
     files = os.listdir(model_path)
     file_name = None
 
@@ -256,7 +304,7 @@ def eval_rollout(args):
     total_loss = []
     time_step = 0
 
-    print("################### Begin Evaluate Rollout #######################")
+    print("\nStarting rollout evaluation...")
     with torch.no_grad():
         for feature, _ in sequence_dataloader:
             feature['positions'] = feature['positions'].to(device)
@@ -278,7 +326,7 @@ def eval_rollout(args):
             print(f"Step: {time_step} | Rollout Loss MSE: {loss_mse:.3f}")
 
             # save rollout results
-            file_name = f'rollout_{args.eval_split}_{time_step}.pkl'
+            file_name = f'{time_step}.pkl'
             file_name = os.path.join(output_path, file_name)
             print(f"Saving rollout file {time_step}.\n")
             with open(file_name, 'wb') as file:
@@ -287,13 +335,6 @@ def eval_rollout(args):
 
         average_loss = torch.tensor(total_loss).mean().item()
         print(f"Average rollout loss is: {average_loss:.3f}")
-
-def get_elapsed_time(start_time):
-    elapsed = time.time() - start_time
-    hours = int(elapsed // 3600)
-    minutes = int((elapsed % 3600) // 60)
-    seconds = int(elapsed % 60)
-    return f"[{hours:02d}:{minutes:02d}:{seconds:02d}]"
 
 def train(args: argparse.Namespace) -> None:
     """Train the simulator model.
@@ -318,7 +359,13 @@ def train(args: argparse.Namespace) -> None:
     fix_seed(args.seed)
 
     # Data setup
-    train_dataset = OneStepDataset(args.dataset, 'train')
+    if args.loss_type == 'one_step':
+        train_dataset = OneStepDataset(args.dataset, 'train')
+        valid_dataset = OneStepDataset(args.dataset, 'valid')
+    elif args.loss_type == 'multi_step':  # multi_step
+        train_dataset = RolloutDataset(args.dataset, 'train')
+        valid_dataset = RolloutDataset(args.dataset, 'valid')
+
     train_dataloader = DataLoader(
         train_dataset,
         collate_fn=one_step_collate,
@@ -326,18 +373,17 @@ def train(args: argparse.Namespace) -> None:
         shuffle=True
     )
 
-    # Add a small portion of the valid split to evaluate 
-    # "one-step" MSE periodically as in the original paper.
-    valid_dataset = OneStepDataset(args.dataset, 'valid')
+    # Add valid split to eval "one-step" MSE periodically
     num_valid_samples = len(valid_dataset)
     eval_subset_size = min(2000, num_valid_samples) # Eval on ~2k samples
 
     # Calculate steps and epochs
     steps_per_epoch = len(train_dataloader) # steps == batches
-    total_steps = args.num_steps
-    validation_frequency = 2500
-    print(f"\nTraining for {args.num_steps} steps with {steps_per_epoch} steps per epoch")
+    validation_frequency = 3000
+    print(f"\nTraining for {args.num_steps} steps")
+    print(f"{steps_per_epoch} steps per epoch")
     print(f"Validating every {validation_frequency} steps")
+    print(f"Device: {device}")
 
     # Model initialization
     metadata = _read_metadata(data_path=f"datasets/{args.dataset}")
@@ -356,10 +402,6 @@ def train(args: argparse.Namespace) -> None:
         args=args
     )
 
-    # Learning rate schedule setup (exponential decay)
-    decay_steps = int(1e5)
-    min_lr = 1e-6
-
     # Optimization setup
     optimizer = torch.optim.Adam(
         simulator.parameters(),
@@ -367,70 +409,166 @@ def train(args: argparse.Namespace) -> None:
         weight_decay=args.weight_decay,
     )
 
-    mse_loss = F.mse_loss
-    best_val_loss = float("inf")
-    global_step = 0
+    # Learning rate schedule setup (exponential decay)
+    decay_steps = int(2e5)
+    min_lr = 1e-6
+    warmup = int(1e4)
 
-    # Loss tracking setup
-    val_mse_history = deque()
+    # Training state tracking
+    best_val_pos_loss = float("inf")
+    val_mse_pos_history = deque()
+    val_mse_acc_history = deque()
     val_steps_history = deque()
-
-    # Track validation improvement
-    warmup = 5000
+    global_step = 0
     patience = 100
     steps_without_improvement = 0
 
-    # Create fixed checkpoint path
-    checkpoint_dir = f'{args.model_path}/{args.dataset}/{args.gnn_type}'
-    os.makedirs(checkpoint_dir, exist_ok=True)
-    best_model_path = f'{checkpoint_dir}/best_val_mse.pt'
+    # Checkpoint setup
+    checkpoint_dir = f'{args.model_path}/{args.dataset}/{args.gnn_type}/{args.loss_type}'
+    best_model_path = f'{checkpoint_dir}/best_val_mse_pos.pt'
 
     start_time = time.time()
-    # Training loop
     print("\nStarting training...")
     try:
         while global_step < args.num_steps:
-            for features, labels in train_dataloader:
-                if global_step >= total_steps:
+            for features, target_next_position in train_dataloader:
+                if global_step >= args.num_steps:
                     break
                 
                 # Move data to device
-                labels = labels.to(device)
-                target_next_position = labels
-                
+                target_next_position = target_next_position.to(device)
                 for key in ['positions', 'particle_types', 'n_particles_per_example']:
                     features[key] = features[key].to(device)
                 if 'step_context' in features:
                     features['step_context'] = features['step_context'].to(device)
 
-                # Add noise with masking
-                sampled_noise = get_random_walk_noise_for_position_sequence(
-                    features['positions'],
-                    noise_std_last_step=args.noise_std
-                ).to(device)
-                
-                non_kinematic_mask = torch.logical_not(get_kinematic_mask(features['particle_types']))
-                noise_mask = non_kinematic_mask.unsqueeze(1).unsqueeze(2)
-                sampled_noise *= noise_mask
-
                 simulator.train()
                 optimizer.zero_grad()
 
-                # Forward pass and loss calculation
-                pred_target = simulator.get_predicted_and_target_normalized_accelerations(
-                    next_position=target_next_position,
-                    position_sequence=features['positions'],
-                    position_sequence_noise=sampled_noise,
-                    n_particles_per_example=features['n_particles_per_example'],
-                    particle_types=features['particle_types'],
-                    global_context=features.get('step_context')
-                )
-                pred_acceleration, target_acceleration = pred_target
+                # one-step loss
+                if args.loss_type == 'one_step':
+                    # Add noise with masking
+                    sampled_noise = get_random_walk_noise_for_position_sequence(
+                        features['positions'],
+                        noise_std_last_step=args.noise_std
+                    ).to(device)
+                    
+                    non_kinematic_mask = torch.logical_not(get_kinematic_mask(features['particle_types']))
+                    noise_mask = non_kinematic_mask.unsqueeze(1).unsqueeze(2)
+                    sampled_noise *= noise_mask
 
-                # Calculate loss on non-kinematic particles
-                loss = (pred_acceleration[non_kinematic_mask] - target_acceleration[non_kinematic_mask]) ** 2
-                num_non_kinematic = torch.sum(non_kinematic_mask.to(torch.float32))
-                loss = torch.sum(loss) / torch.sum(num_non_kinematic)
+                    # Forward pass and loss calculation
+                    pred_target = simulator.get_predicted_and_target_normalized_accelerations(
+                        next_position=target_next_position,
+                        position_sequence=features['positions'],
+                        position_sequence_noise=sampled_noise,
+                        n_particles_per_example=features['n_particles_per_example'],
+                        particle_types=features['particle_types'],
+                        global_context=features.get('step_context')
+                    )
+                    pred_acceleration, target_acceleration = pred_target
+
+                    # Calculate train MSE-acc1 on non-kinematic particles
+                    loss = (pred_acceleration[non_kinematic_mask] - target_acceleration[non_kinematic_mask]) ** 2
+                    loss = torch.mean(loss)
+                    train_mse_acc_1 = loss.item()
+
+                    # Compute train MSE-pos1
+                    simulator.eval()
+                    with torch.no_grad():
+                        predicted_next_position = simulator(
+                            position_sequence=features['positions'],
+                            n_particles_per_example=features['n_particles_per_example'],
+                            particle_types=features['particle_types'],
+                            global_context=features.get('step_context')
+                        )
+                        train_mse_pos_1 = F.mse_loss(predicted_next_position, target_next_position).item()
+                    simulator.train()
+
+                # multi-step loss
+                elif args.loss_type == 'multi_step':
+                    # Ground truth positions
+                    current_positions = features['positions'][:, :INPUT_SEQUENCE_LENGTH]
+                    
+                    non_kinematic_mask = torch.logical_not(get_kinematic_mask(features['particle_types']))
+                    
+                    # Lists to store predictions and targets
+                    pred_accelerations = []
+                    target_accelerations = []
+
+                    # First step: Use ground truth positions
+                    pred_target = simulator.get_predicted_and_target_normalized_accelerations(
+                        next_position=target_next_position,
+                        position_sequence=current_positions,
+                        position_sequence_noise=torch.zeros_like(current_positions),
+                        n_particles_per_example=features['n_particles_per_example'],
+                        particle_types=features['particle_types'],
+                        global_context=features.get('step_context')
+                    )
+                    pred_accel, target_accel = pred_target
+                    pred_accelerations.append(pred_accel)
+                    target_accelerations.append(target_accel)
+                    
+                    # Predict next position using current sequence
+                    next_position = simulator(
+                        position_sequence=current_positions,
+                        n_particles_per_example=features['n_particles_per_example'],
+                        particle_types=features['particle_types'],
+                        global_context=features.get('step_context')
+                    )
+                    
+                    # Additional steps use model's OWN predictions
+                    for step in range(args.n_rollout_steps):
+                        # Update position sequence with predicted position
+                        current_positions = torch.cat([
+                            current_positions[:, 1:],
+                            next_position.unsqueeze(1)
+                        ], dim=1)
+                        
+                        # Target position
+                        target_idx = INPUT_SEQUENCE_LENGTH + step + 1
+                        target_position = features['positions'][:, target_idx]
+                        
+                        # Accelerations for next step
+                        pred_target = simulator.get_predicted_and_target_normalized_accelerations(
+                            next_position=target_position,
+                            position_sequence=current_positions,
+                            position_sequence_noise=torch.zeros_like(current_positions),
+                            n_particles_per_example=features['n_particles_per_example'],
+                            particle_types=features['particle_types'],
+                            global_context=features.get('step_context')
+                        )
+                        pred_accel, target_accel = pred_target
+                        pred_accelerations.append(pred_accel)
+                        target_accelerations.append(target_accel)
+                        
+                        # Predict next position
+                        next_position = simulator(
+                            position_sequence=current_positions,
+                            n_particles_per_example=features['n_particles_per_example'],
+                            particle_types=features['particle_types'],
+                            global_context=features.get('step_context')
+                        )
+                    
+                    # Compute multi-step loss (average across steps)
+                    loss = compute_multi_step_loss(
+                        pred_accelerations,
+                        target_accelerations,
+                        non_kinematic_mask
+                    )
+                    train_mse_acc_1 = loss.item()
+
+                    # Compute position MSE for logging
+                    simulator.eval()
+                    with torch.no_grad():
+                        predicted_next_position = simulator(
+                            position_sequence=current_positions,
+                            n_particles_per_example=features['n_particles_per_example'],
+                            particle_types=features['particle_types'],
+                            global_context=features.get('step_context')
+                        )
+                        train_mse_pos_1 = F.mse_loss(predicted_next_position, target_next_position).item()
+                    simulator.train()
 
                 # Optimization step
                 loss.backward()
@@ -449,26 +587,15 @@ def train(args: argparse.Namespace) -> None:
                 for param_group in optimizer.param_groups:
                     param_group['lr'] = current_lr
 
-                # For logging: compute position MSE
-                simulator.eval()
-                with torch.no_grad():
-                    predicted_next_position = simulator(
-                        position_sequence=features['positions'],
-                        n_particles_per_example=features['n_particles_per_example'],
-                        particle_types=features['particle_types'],
-                        global_context=features.get('step_context')
-                    )
-                    batch_loss_mse = mse_loss(pred_acceleration, target_acceleration).item()
-                    batch_pos_mse = mse_loss(predicted_next_position, target_next_position).item()
-
-                # Print progress every 250 steps
+                # Print progress
                 if global_step % 250 == 0:
                     print(f"{get_elapsed_time(start_time)} "
                           f"Step: {global_step} | "
-                          f"Accel (Loss) MSE: {batch_loss_mse:.3f} | "
-                          f"Train Position MSE: {batch_pos_mse*1e9:.2f}e-9 | "
-                          f"LR: {current_lr:.2e}")
+                          f"MSE-acc 1: {train_mse_acc_1:.3e} | "
+                          f"MSE-pos 1: {train_mse_pos_1*1e9:.3e}e-9 | "
+                          f"LR: {current_lr:.3e}")
 
+                # Validation
                 if global_step % validation_frequency == 0 and global_step > 0:
                     simulator.eval()
                     valid_indices = np.random.choice(num_valid_samples, eval_subset_size, replace=False)
@@ -477,51 +604,138 @@ def train(args: argparse.Namespace) -> None:
                         valid_subset, 
                         collate_fn=one_step_collate,
                         batch_size=args.batch_size,
+                        shuffle=True
                     )
 
                     val_losses = []
                     with torch.no_grad():
-                        for vfeat, vlabels in val_dataloader:
-                            vlabels = vlabels.to(device)
+                        for vfeat, vtarget in val_dataloader:
+                            vtarget = vtarget.to(device)
                             for key in ['positions', 'particle_types', 'n_particles_per_example']:
                                 vfeat[key] = vfeat[key].to(device)
                             if 'step_context' in vfeat:
                                 vfeat['step_context'] = vfeat['step_context'].to(device)
 
-                            vpred = simulator(
-                                position_sequence=vfeat['positions'],
-                                n_particles_per_example=vfeat['n_particles_per_example'],
-                                particle_types=vfeat['particle_types'],
-                                global_context=vfeat.get('step_context')
-                            )
-                            val_losses.append(mse_loss(vpred, vlabels).item())
+                            if args.loss_type == 'one_step':
+                                # Get position prediction
+                                vpred = simulator(
+                                    position_sequence=vfeat['positions'],
+                                    n_particles_per_example=vfeat['n_particles_per_example'],
+                                    particle_types=vfeat['particle_types'],
+                                    global_context=vfeat.get('step_context')
+                                )
+                                pos_loss = F.mse_loss(vpred, vtarget).item()
 
-                    mean_val_loss = float(np.mean(val_losses))
-                    val_mse_history.append(mean_val_loss)
+                                # Get acceleration prediction
+                                vpred_target = simulator.get_predicted_and_target_normalized_accelerations(
+                                    next_position=vtarget,
+                                    position_sequence=vfeat['positions'],
+                                    position_sequence_noise=torch.zeros_like(vfeat['positions']), # no noise during val
+                                    n_particles_per_example=vfeat['n_particles_per_example'],
+                                    particle_types=vfeat['particle_types'],
+                                    global_context=vfeat.get('step_context')
+                                )
+                                vpred_accel, vtarget_accel = vpred_target
+                                accel_loss = F.mse_loss(vpred_accel, vtarget_accel).item()
+
+                                val_losses.append({
+                                    'accel': accel_loss,
+                                    'pos': pos_loss
+                                })
+                            
+                            # multi-step loss
+                            elif args.loss_type == 'multi_step':
+                                vcurrent_positions = vfeat['positions'][:, :INPUT_SEQUENCE_LENGTH]
+                                vpred_accelerations = []
+                                vtarget_accelerations = []
+                                
+                                for step in range(args.n_rollout_steps + 1):
+                                    if step == 0:
+                                        vtarget_pos = vtarget
+                                    else:
+                                        vtarget_pos = vfeat['positions'][:, INPUT_SEQUENCE_LENGTH + step]
+
+                                    vpred_target = simulator.get_predicted_and_target_normalized_accelerations(
+                                        next_position=vtarget_pos,
+                                        position_sequence=vcurrent_positions,
+                                        position_sequence_noise=torch.zeros_like(vcurrent_positions),
+                                        n_particles_per_example=vfeat['n_particles_per_example'],
+                                        particle_types=vfeat['particle_types'],
+                                        global_context=vfeat.get('step_context')
+                                    )
+                                    vpred_accel, vtarget_accel = vpred_target
+                                    vpred_accelerations.append(vpred_accel)
+                                    vtarget_accelerations.append(vtarget_accel)
+
+                                    if step < args.n_rollout_steps:
+                                        vnext_position = simulator(
+                                            position_sequence=vcurrent_positions,
+                                            n_particles_per_example=vfeat['n_particles_per_example'],
+                                            particle_types=vfeat['particle_types'],
+                                            global_context=vfeat.get('step_context')
+                                        )
+                                        vcurrent_positions = torch.cat([
+                                            vcurrent_positions[:, 1:],
+                                            vnext_position.unsqueeze(1)
+                                        ], dim=1)
+                                
+                                full_scene_mask = torch.ones_like(
+                                    get_kinematic_mask(vfeat['particle_types']), 
+                                    dtype=torch.bool
+                                )
+
+                                # Compute acceleration loss
+                                accel_loss = compute_multi_step_loss(
+                                    vpred_accelerations,
+                                    vtarget_accelerations,
+                                    full_scene_mask
+                                )
+
+                                # Compute position MSE
+                                vpred_next_position = simulator(
+                                    position_sequence=vcurrent_positions,
+                                    n_particles_per_example=vfeat['n_particles_per_example'],
+                                    particle_types=vfeat['particle_types'],
+                                    global_context=vfeat.get('step_context')
+                                )
+                                pos_loss = F.mse_loss(vpred_next_position, vtarget)
+
+                                # Store both metrics
+                                val_losses.append({
+                                    'accel': accel_loss.item(),
+                                    'pos': pos_loss.item()
+                                })
+
+                    mean_val_acc_loss = float(np.mean([x['accel'] for x in val_losses]))
+                    mean_val_pos_loss = float(np.mean([x['pos'] for x in val_losses]))
+                    val_mse_pos_history.append(mean_val_pos_loss) # store val MSE-pos history
+                    val_mse_acc_history.append(mean_val_acc_loss) # store val MSE-acc history
                     val_steps_history.append(global_step)
-                    print(f"{get_elapsed_time(start_time)} Validation One-step MSE: {mean_val_loss*1e9:.3f}e-9")
+                    print(f"{get_elapsed_time(start_time)} Validation MSE-acc: {mean_val_acc_loss:.3f} | "
+                          f"MSE-pos: {mean_val_pos_loss*1e9:.2f}e-9")
 
                     # Check for improvement
-                    if mean_val_loss < best_val_loss:
-                        best_val_loss = mean_val_loss
+                    if mean_val_pos_loss < best_val_pos_loss:
+                        best_val_pos_loss = mean_val_pos_loss
                         steps_without_improvement = 0
-                        print(f"New best validation MSE: {best_val_loss*1e9:.3f}e-9 -> Saving model...")
+                        print(f"\t\tNew best validation MSE-pos -> Saving model...")
                         checkpoint = {
                             'model_state_dict': simulator.state_dict(),
-                            'optimizer_state_dict': optimizer.state_dict(),
+                            #'optimizer_state_dict': optimizer.state_dict(),
                             'global_step': global_step,
-                            'val_mse_history': list(val_mse_history),
+                            'val_mse_pos_history': list(val_mse_pos_history),
+                            'val_mse_acc_history': list(val_mse_acc_history),
                             'val_steps_history': list(val_steps_history),
                         }
                         torch.save(checkpoint, best_model_path)
                     else:
                         steps_without_improvement += 1
-                        print(f"No improvement. Steps without improvement: {steps_without_improvement}/{patience}")
+                        print(f"\t\tNo improvement. Steps without improvement: {steps_without_improvement}/{patience}")
 
                     # Early stopping if patience is exceeded
                     if steps_without_improvement >= patience:
                         print("\nEarly stopping triggered - No improvement on validation set.")
-                        return
+                        raise KeyboardInterrupt
                 
                 global_step += 1
     
@@ -530,13 +744,14 @@ def train(args: argparse.Namespace) -> None:
         print(f"Saving current checkpoint - Step: {global_step}")
     
     print(f"\n{get_elapsed_time(start_time)} Training completed!")
-    print(f"Best loss achieved: {best_val_loss*1e9:.3f}e-9")
+    print(f"Best validation MSE-pos achieved: {best_val_pos_loss*1e9:.3f}e-9")
     print(f"Best model saved at: {best_model_path}")
     checkpoint = {
             'model_state_dict': simulator.state_dict(),
-            'optimizer_state_dict': optimizer.state_dict(),
+            #'optimizer_state_dict': optimizer.state_dict(),
             'global_step': global_step,
-            'val_mse_history': list(val_mse_history),
+            'val_mse_pos_history': list(val_mse_pos_history),
+            'val_mse_acc_history': list(val_mse_acc_history),
             'val_steps_history': list(val_steps_history),
         }
     torch.save(
@@ -559,8 +774,8 @@ def parse_arguments():
                         help='The batch size for training and evaluation.')
     global_group.add_argument('--model_path', default="models", type=str,
                         help='The path for saving/loading model checkpoints.')
-    global_group.add_argument('--gnn_type', default='gcn', 
-                        choices=['gcn', 'gat', 'trans_gnn', 'interaction_net'],
+    global_group.add_argument('--gnn_type', default='interaction_net', 
+                        choices=['interaction_net', 'gat', 'gcn'],
                         help='The GNN to be used as processor.')
     global_group.add_argument('--message_passing_steps', default=10, type=int,
                         help='Number of GNN message passing steps.')
@@ -577,6 +792,14 @@ def parse_arguments():
                         help='Initial learning rate.')
     train_group.add_argument('--weight_decay', type=float, default=0,
                         help='Weight decay for optimizer.')
+    train_group.add_argument('--loss_type', 
+                          default='one_step',
+                          choices=['one_step', 'multi_step'],
+                          help='Type of loss function to use during training')
+    train_group.add_argument('--n_rollout_steps', 
+                          type=int, 
+                          default=1,
+                          help='Number of rollout steps for multi-step loss')
     
     # Evaluation-specific arguments
     eval_group = parser.add_argument_group('Evaluation Arguments (only used when mode=eval or eval_rollout)')
@@ -585,6 +808,8 @@ def parse_arguments():
                         help='Dataset split to use for evaluation.')
     eval_group.add_argument('--output_path', default="rollouts", type=str,
                         help='Path for saving rollout results (only used in eval_rollout mode).')
+    eval_group.add_argument('--compute_all_metrics', action='store_true',
+                        help='If set, computes all metrics (MSE1, MSE20, MSE400, EMD) instead of just MSE1.')
     
     # GNN Architecture arguments
     gnn_group = parser.add_argument_group('GNN Architecture Arguments')
@@ -606,34 +831,16 @@ def parse_arguments():
     trans_group = parser.add_argument_group('TransGNN-specific Arguments (only used when gnn_type=trans_gnn)')
     trans_group.add_argument('--use_bn', action='store_true',
                         help='Use layer normalization.')
-    trans_group.add_argument('--dropedge', type=float, default=0.0,
-                        help='Edge dropout rate for regularization.')
-    trans_group.add_argument('--dropnode', type=float, default=0.0,
-                        help='Node dropout rate for regularization.')
-    trans_group.add_argument('--trans_heads', type=int, default=4,
-                        help='Number of transformer heads.')
-    trans_group.add_argument('--nb_random_features', type=int, default=30,
-                        help='Number of random features.')
-    trans_group.add_argument('--use_gumbel', action='store_true',
-                        help='Use Gumbel softmax for message passing.')
     trans_group.add_argument('--use_residual', action='store_true',
                         help='Use residual connections for each GNN layer.')
-    trans_group.add_argument('--nb_sample_gumbel', type=int, default=10,
-                        help='Number of samples for Gumbel softmax sampling.')
-    trans_group.add_argument('--temperature', type=float, default=0.25,
-                        help='Temperature coefficient for softmax.')
-    trans_group.add_argument('--reg_weight', type=float, default=0.1,
-                        help='Weight for graph regularization.')
-    trans_group.add_argument('--projection_matrix_type', type=bool, default=True,
-                        help='Use projection matrix.')
     
     args = parser.parse_args()
     
     # Create output directories if they don't exist
-    os.makedirs(f'{args.model_path}/{args.dataset}/{args.gnn_type}',
+    os.makedirs(f'{args.model_path}/{args.dataset}/{args.gnn_type}/{args.loss_type}',
                exist_ok=True)
     if args.mode == 'eval_rollout':
-        os.makedirs(f'{args.output_path}/{args.dataset}/{args.gnn_type}',
+        os.makedirs(f'{args.output_path}/{args.dataset}/{args.gnn_type}/{args.loss_type}/{args.eval_split}',
                    exist_ok=True)
     
     print_args(args)
@@ -644,7 +851,7 @@ if __name__ == '__main__':
     if args.mode == 'train':
         train(args)
     elif args.mode == 'eval':
-        eval_one_step(args)
+        eval(args)
     elif args.mode == 'eval_rollout':
         eval_rollout(args)
     else:

@@ -9,9 +9,9 @@ from dataclasses import dataclass
 @dataclass
 class GraphData:
     """Container for graph data."""
-    node_feat: torch.Tensor  # [N, F_x] Node features
+    node_feat:  torch.Tensor  # [N, F_x] Node features
     edge_index: torch.Tensor  # [2, E] Edge indices
-    edge_feat: torch.Tensor  # [E, F_e] Edge features
+    edge_feat:  torch.Tensor  # [E, F_e] Edge features
 
 class EdgeModel(nn.Module):
     """Updates edge features based on source and target node features."""
@@ -38,10 +38,10 @@ class EdgeModel(nn.Module):
         Returns:
             Updated edge features [E, F_e_out]
         """
-        edge_index = edge_index.permute(1, 0)  # [E, 2]
-        sender_features = x[edge_index[0]]     # Source node features
+        #edge_index = edge_index.permute(1, 0)  # [E, 2]
+        sender_features   = x[edge_index[0]]   # Source node features
         receiver_features = x[edge_index[1]]   # Target node features
-        
+
         # Concatenate all features for edge update
         edge_inputs = torch.cat([
             sender_features, 
