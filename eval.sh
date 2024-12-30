@@ -1,8 +1,9 @@
 #!/bin/bash
-python main.py \
+python ./src/main.py \
     --mode=eval \
     --dataset=WaterDropSample \
     --gnn_type=interaction_net \
     --loss_type=one_step \
     --eval_split=test \
-    "$@"  # allow passing additional args (if needed)
+    --compute_all_metrics \
+    "$@"

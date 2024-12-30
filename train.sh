@@ -1,9 +1,8 @@
 #!/bin/bash
-python main.py \
+python ./src/main.py \
     --mode=train \
-    --dataset=WaterDropSample \
+    --dataset=Water \
     --gnn_type=interaction_net \
     --loss_type=one_step \
-    --num_steps=250000 \
-    --batch_size=2 \
-    "$@"
+    --num_steps=500000 \
+    --batch_size=2

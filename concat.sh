@@ -8,13 +8,13 @@
 # Output file name
 OUTPUT_FILE="combined_py_files.txt"
 
-# Check if there are any .py files in the current directory
+# Check if there are any .py files in the src directory
 shopt -s nullglob
-PY_FILES=(*.py)
+PY_FILES=(./src/*.py)
 shopt -u nullglob
 
 if [ ${#PY_FILES[@]} -eq 0 ]; then
-    echo "No .py files found in the current directory."
+    echo "No .py files found in the src directory."
     exit 1
 fi
 

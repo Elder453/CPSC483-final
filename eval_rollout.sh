@@ -1,5 +1,5 @@
 #!/bin/bash
-python main.py \
+python ./src/main.py \
     --mode=eval_rollout \
     --dataset=WaterDropSample \
     --gnn_type=interaction_net \
