@@ -1,9 +1,8 @@
-# noise_utils.py
-
 import torch
 from typing import Union, Tuple
 import numpy as np
 from learned_simulator import time_diff
+
 
 def get_random_walk_noise_for_position_sequence(
     position_sequence: torch.Tensor,
@@ -38,26 +37,22 @@ def get_random_walk_noise_for_position_sequence(
     # Generate velocity noise
     # Scale is set so that accumulated noise at last step has desired std
     step_noise_std = noise_std_last_step / np.sqrt(num_velocities)
-    velocity_sequence_noise = torch.normal(
-        mean=0.0,
-        std=step_noise_std,
-        size=velocity_sequence.shape,
+    velocity_noise = torch.randn_like(
+        velocity_sequence,
         dtype=position_sequence.dtype,
-        device=position_sequence.device  # Ensure noise is on same device
-    )
+        device=position_sequence.device
+    ) * step_noise_std
 
     # Accumulate velocity noise over time
-    velocity_sequence_noise = torch.cumsum(velocity_sequence_noise, dim=1)
+    velocity_noise.cumsum_(dim=1)
 
     # Integrate velocity noise to get position noise
     # Start with zero noise at first position
-    initial_position_noise = torch.zeros_like(velocity_sequence_noise[:, 0:1])
-    position_sequence_noise = torch.cat([
-        initial_position_noise,
-        torch.cumsum(velocity_sequence_noise, dim=1)
-    ], dim=1)
+    position_noise = torch.zeros_like(position_sequence)
+    position_noise[:, 1:] = velocity_noise.cumsum(dim=1)
 
-    return position_sequence_noise
+    return position_noise
+
 
 def validate_noise_inputs(
     position_sequence: torch.Tensor,

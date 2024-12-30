@@ -1,6 +1,4 @@
-# utils.py
-
-# Standard library imports
+# standard library imports
 import collections
 import json
 import os
@@ -8,19 +6,28 @@ import random
 import time
 from typing import Dict, Any, Union, NamedTuple, List
 
-# Third-party imports
+# 3rd-party imports
+import multiprocessing as mp
 import numpy as np
 import torch
 from tabulate import tabulate
 
-# Type definitions
 Stats = collections.namedtuple('Stats', ['mean', 'std'])
 
-# Constants
+def get_cpu_count():
+    if 'SLURM_CPUS_PER_TASK' in os.environ:
+        return int(os.environ['SLURM_CPUS_PER_TASK'])
+    if 'SLURM_CPUS_ON_NODE' in os.environ:
+        return int(os.environ['SLURM_CPUS_ON_NODE'])
+    return mp.cpu_count()
+
+# constants
 INPUT_SEQUENCE_LENGTH = 6  # For calculating last 5 velocities
 NUM_PARTICLE_TYPES = 9
 KINEMATIC_PARTICLE_ID = 3
+NUM_WORKERS = get_cpu_count() - 1
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
 
 def print_args(args) -> None:
     """Print arguments in a formatted table."""
@@ -31,6 +38,7 @@ def print_args(args) -> None:
     
     print(tabulate(rows, headers=["Parameter", "Value"], tablefmt="grid"))
 
+
 def fix_seed(seed: int) -> None:
     """Fix random seeds for reproducibility."""
     random.seed(seed)
@@ -39,6 +47,7 @@ def fix_seed(seed: int) -> None:
     torch.cuda.manual_seed(seed)
     torch.backends.cudnn.deterministic = True
 
+
 def get_elapsed_time(start_time):
     elapsed = time.time() - start_time
     hours = int(elapsed // 3600)
@@ -46,13 +55,16 @@ def get_elapsed_time(start_time):
     seconds = int(elapsed % 60)
     return f"[{hours:02d}:{minutes:02d}:{seconds:02d}]"
 
+
 def get_kinematic_mask(particle_types: torch.Tensor) -> torch.Tensor:
     """Get boolean mask for kinematic particles."""
     return torch.eq(particle_types, KINEMATIC_PARTICLE_ID)
 
+
 def _combine_std(std_x: float, std_y: float) -> float:
     """Combine standard deviations using root sum of squares."""
     return np.sqrt(std_x**2 + std_y**2)
+
 
 def compute_multi_step_loss(
     preds: List[torch.Tensor],
@@ -108,6 +120,7 @@ def compute_multi_step_loss(
     avg_loss = total_loss / (num_non_kinematic * len(preds))
     
     return avg_loss
+
 
 def _read_metadata(data_path: str) -> Dict[str, Any]:
     """Read metadata from JSON file."""

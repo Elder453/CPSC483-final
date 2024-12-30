@@ -1,9 +1,12 @@
-# connectivity_utils.py
-
+import os
 from typing import Tuple
 import numpy as np
 import torch
 from sklearn.neighbors import KDTree
+from utils import NUM_WORKERS
+
+os.environ["OMP_NUM_THREADS"] = str(NUM_WORKERS)
+
 
 def _compute_connectivity(
     positions: np.ndarray,
@@ -31,6 +34,7 @@ def _compute_connectivity(
         receivers = receivers[mask]
 
     return senders, receivers
+
 
 def compute_connectivity_for_batch(
     positions: np.ndarray, 

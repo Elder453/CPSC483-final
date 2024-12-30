@@ -23,7 +23,7 @@
 #     - torch-sparse==0.6.18
 #     - torch-geometric==2.6.1
 
-name: learn-to-sim3
+name: learn-to-sim
 channels:
   - nvidia
   - pytorch
@@ -32,11 +32,11 @@ channels:
   - defaults
 dependencies:
   - python=3.10
-  - numpy
-  - pytorch
+  - pytorch-cuda=12.4
+  - pytorch  
   - torchvision
   - torchaudio
-  - pytorch-cuda=12.4
+  - numpy
   - scikit-learn
   - pyg
   - torch-scatter

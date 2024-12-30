@@ -1,9 +1,8 @@
-# rollout.py
-
 import torch
 from typing import Dict, List, Optional, Tuple, Union
 from utils import INPUT_SEQUENCE_LENGTH, get_kinematic_mask
 from torch import Tensor
+
 
 def rollout(
     simulator: torch.nn.Module,

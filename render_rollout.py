@@ -12,6 +12,7 @@ TYPE_TO_COLOR = {
     5: "blue",    # Water.
 }
 
+
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Render rollout.")
     parser.add_argument(
@@ -69,6 +70,7 @@ def parse_arguments():
     args.rollout_path = f"{args.output_path}/{args.dataset}/{args.gnn_type}/{args.loss_type}/{args.eval_split}"
     return args
 
+
 def main(args):
     if not args.rollout_path:
         raise ValueError("A `rollout_path` must be passed.")
@@ -118,6 +120,7 @@ def main(args):
     )
     anim.save(f"{args.rollout_path}/{args.time_step}.gif", writer='imagemagick', fps=10)
     # plt.show(block=args.block_on_show)
+
 
 if __name__ == '__main__':
     main(parse_arguments())

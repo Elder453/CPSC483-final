@@ -1,15 +1,12 @@
-# main.py
-
-# Standard library imports
+# standard library imports
 import argparse
-import math
 import os
 import pickle
 import time
 from collections import deque
 from typing import Optional, Dict, Union, List
 
-# Third-party imports
+# 3rd-party imports
 import numpy as np
 import torch
 import torch.nn as nn
@@ -17,7 +14,7 @@ import torch.nn.functional as F
 from torch.nn.utils import clip_grad_norm_
 from torch.utils.data import DataLoader, Subset
 
-# Local imports
+# local imports
 from learned_simulator import LearnedSimulator
 from noise_utils import get_random_walk_noise_for_position_sequence
 from dataloader import OneStepDataset, RolloutDataset, one_step_collate
@@ -39,8 +36,10 @@ from utils import (
     print_args,
     Stats,
     INPUT_SEQUENCE_LENGTH,
-    NUM_PARTICLE_TYPES
+    NUM_PARTICLE_TYPES,
+    NUM_WORKERS
 )
+
 
 def _get_simulator(
     model_kwargs: dict,
@@ -92,6 +91,7 @@ def _get_simulator(
     )
     return simulator
 
+
 def eval(args: argparse.Namespace) -> None:
     """Evaluate model on single-step predictions.
     
@@ -112,7 +112,7 @@ def eval(args: argparse.Namespace) -> None:
     Raises:
         ValueError: If no model checkpoint is found
     """
-    # Model initialization
+    # model init
     metadata = _read_metadata(data_path=f"datasets/{args.dataset}")
     model_kwargs = dict(
         latent_size=128,
@@ -121,7 +121,7 @@ def eval(args: argparse.Namespace) -> None:
         num_message_passing_steps=args.message_passing_steps,
     )
     
-    # Initialize simulator
+    # init simulator
     simulator = _get_simulator(
         model_kwargs=model_kwargs,
         metadata=metadata,
@@ -130,7 +130,7 @@ def eval(args: argparse.Namespace) -> None:
         args=args
     )
     
-    # Load model checkpoint
+    # load model checkpoint
     checkpoint_path = f'{args.model_path}/{args.dataset}/{args.gnn_type}/{args.loss_type}'
     checkpoint_file = None
     for file in os.listdir(checkpoint_path):
@@ -145,7 +145,6 @@ def eval(args: argparse.Namespace) -> None:
     checkpoint = torch.load(checkpoint_file, map_location=device, weights_only=False)
     simulator.load_state_dict(checkpoint['model_state_dict'])
 
-    # Evaluation loop
     metrics = {
         'mse_acc_1': [],
         'mse_pos_1': [],
@@ -153,7 +152,7 @@ def eval(args: argparse.Namespace) -> None:
     time_step = 0
     simulator.eval()
 
-    # Compute one-step metrics using OneStepDataset
+    # compute one-step metrics using OneStepDataset
     print("\nComputing one-step metrics...")
     one_step_dataset = OneStepDataset(args.dataset, args.eval_split)
     one_step_dataloader = DataLoader(
@@ -165,14 +164,13 @@ def eval(args: argparse.Namespace) -> None:
 
     with torch.no_grad():
         for features, labels in one_step_dataloader:
-            # Move data to device
             labels = labels.to(device)
             for key in ['positions', 'particle_types', 'n_particles_per_example']:
                 features[key] = features[key].to(device)
             if 'step_context' in features:
                 features['step_context'] = features['step_context'].to(device)
             
-            # Compute MSE1 metrics -- no noise added
+            # compute MSE1 metrics -- no noise added
             mse_pos_1, mse_acc_1 = compute_one_step_metrics(
                 simulator, features, labels
             )
@@ -182,11 +180,11 @@ def eval(args: argparse.Namespace) -> None:
 
             if time_step % 200 == 0:
                 print(f"Step: {time_step} | "
-                      f"MSE-acc 1: {mse_acc_1:.3e} | "
-                      f"MSE-pos 1: {mse_pos_1*1e9:.3f}e-9")
+                      f"MSE-acc 1: {mse_acc_1:.2e} | "
+                      f"MSE-pos 1: {mse_pos_1:.2e}")
             time_step += 1
 
-    # Compute trajectory metrics using RolloutDataset
+    # compute trajectory metrics using RolloutDataset
     if args.compute_all_metrics:
         print("\nComputing trajectory metrics...")
         rollout_dataset = RolloutDataset(args.dataset, args.eval_split)
@@ -208,19 +206,18 @@ def eval(args: argparse.Namespace) -> None:
 
         with torch.no_grad():
             for features, labels in rollout_dataloader:
-                # Move data to device
                 labels = labels.to(device)
                 for key in ['positions', 'particle_types', 'n_particles_per_example']:
                     features[key] = features[key].to(device)
                 if 'step_context' in features:
                     features['step_context'] = features['step_context'].to(device)
 
-                # Run rollout
+                # run rollout
                 num_steps = metadata['sequence_length'] - INPUT_SEQUENCE_LENGTH
                 rollout_op = rollout(simulator, features, num_steps)
                 rollout_op['metadata'] = metadata
                 
-                # Compute trajectory metrics
+                # compute trajectory metrics
                 mse_pos_20, mse_acc_20 = compute_mse_n(
                     simulator, features, rollout_op, n_frames=20
                 )
@@ -229,7 +226,6 @@ def eval(args: argparse.Namespace) -> None:
                 )
                 emd = compute_emd(simulator, features, rollout_op)
                 
-                # Store metrics
                 metrics['mse_pos_20'].append(mse_pos_20)
                 metrics['mse_acc_20'].append(mse_acc_20)
                 metrics['mse_pos_400'].append(mse_pos_400)
@@ -244,11 +240,12 @@ def eval(args: argparse.Namespace) -> None:
                         f"EMD: {emd:.3e}")
                 time_step += 1
 
-    # Average metrics
+    # average metrics
     print("\nAverage metrics across all evaluations:")
     for key in metrics:
         avg_value = np.mean(metrics[key])
         print(f"{key}: {avg_value:.3e}")
+
 
 def eval_rollout(args):
     """Evaluate model on trajectory rollouts."""
@@ -323,7 +320,7 @@ def eval_rollout(args):
                 rollout_op['ground_truth_rollout']
             )
             total_loss.append(loss_mse)
-            print(f"Step: {time_step} | Rollout Loss MSE: {loss_mse:.3f}")
+            print(f"Step: {time_step} | Rollout Loss MSE: {loss_mse:.3e}")
 
             # save rollout results
             file_name = f'{time_step}.pkl'
@@ -334,7 +331,8 @@ def eval_rollout(args):
             time_step += 1
 
         average_loss = torch.tensor(total_loss).mean().item()
-        print(f"Average rollout loss is: {average_loss:.3f}")
+        print(f"Average rollout loss is: {average_loss:.3e}")
+
 
 def train(args: argparse.Namespace) -> None:
     """Train the simulator model.
@@ -358,11 +356,11 @@ def train(args: argparse.Namespace) -> None:
     """
     fix_seed(args.seed)
 
-    # Data setup
+    # data setup
     if args.loss_type == 'one_step':
         train_dataset = OneStepDataset(args.dataset, 'train')
         valid_dataset = OneStepDataset(args.dataset, 'valid')
-    elif args.loss_type == 'multi_step':  # multi_step
+    elif args.loss_type == 'multi_step':
         train_dataset = RolloutDataset(args.dataset, 'train')
         valid_dataset = RolloutDataset(args.dataset, 'valid')
 
@@ -370,22 +368,23 @@ def train(args: argparse.Namespace) -> None:
         train_dataset,
         collate_fn=one_step_collate,
         batch_size=args.batch_size,
+        num_workers=NUM_WORKERS,
+        pin_memory=True,
         shuffle=True
     )
 
-    # Add valid split to eval "one-step" MSE periodically
+    # add val split to eval "one-step" MSE periodically
     num_valid_samples = len(valid_dataset)
-    eval_subset_size = min(2000, num_valid_samples) # Eval on ~2k samples
+    eval_subset_size = min(2000, num_valid_samples) # eval on ~2k samples
 
-    # Calculate steps and epochs
     steps_per_epoch = len(train_dataloader) # steps == batches
     validation_frequency = 3000
     print(f"\nTraining for {args.num_steps} steps")
     print(f"{steps_per_epoch} steps per epoch")
     print(f"Validating every {validation_frequency} steps")
+    print(f"Number of Workers: {NUM_WORKERS}")
     print(f"Device: {device}")
 
-    # Model initialization
     metadata = _read_metadata(data_path=f"datasets/{args.dataset}")
     model_kwargs = dict(
         latent_size=128,
@@ -402,19 +401,19 @@ def train(args: argparse.Namespace) -> None:
         args=args
     )
 
-    # Optimization setup
+    # optimization setup
     optimizer = torch.optim.Adam(
         simulator.parameters(),
         lr=args.lr,
         weight_decay=args.weight_decay,
     )
 
-    # Learning rate schedule setup (exponential decay)
+    # LR schedule setup (exp decay)
     decay_steps = int(2e5)
     min_lr = 1e-6
     warmup = int(1e4)
 
-    # Training state tracking
+    # training state tracking
     best_val_pos_loss = float("inf")
     val_mse_pos_history = deque()
     val_mse_acc_history = deque()
@@ -423,7 +422,7 @@ def train(args: argparse.Namespace) -> None:
     patience = 100
     steps_without_improvement = 0
 
-    # Checkpoint setup
+    # checkpoint set up
     checkpoint_dir = f'{args.model_path}/{args.dataset}/{args.gnn_type}/{args.loss_type}'
     best_model_path = f'{checkpoint_dir}/best_val_mse_pos.pt'
 
@@ -435,7 +434,6 @@ def train(args: argparse.Namespace) -> None:
                 if global_step >= args.num_steps:
                     break
                 
-                # Move data to device
                 target_next_position = target_next_position.to(device)
                 for key in ['positions', 'particle_types', 'n_particles_per_example']:
                     features[key] = features[key].to(device)
@@ -447,7 +445,7 @@ def train(args: argparse.Namespace) -> None:
 
                 # one-step loss
                 if args.loss_type == 'one_step':
-                    # Add noise with masking
+                    # add noise with masking
                     sampled_noise = get_random_walk_noise_for_position_sequence(
                         features['positions'],
                         noise_std_last_step=args.noise_std
@@ -457,7 +455,7 @@ def train(args: argparse.Namespace) -> None:
                     noise_mask = non_kinematic_mask.unsqueeze(1).unsqueeze(2)
                     sampled_noise *= noise_mask
 
-                    # Forward pass and loss calculation
+                    # forward pass and loss calculation
                     pred_target = simulator.get_predicted_and_target_normalized_accelerations(
                         next_position=target_next_position,
                         position_sequence=features['positions'],
@@ -468,12 +466,12 @@ def train(args: argparse.Namespace) -> None:
                     )
                     pred_acceleration, target_acceleration = pred_target
 
-                    # Calculate train MSE-acc1 on non-kinematic particles
+                    # compute train MSE-acc1 on non-kinematic particles
                     loss = (pred_acceleration[non_kinematic_mask] - target_acceleration[non_kinematic_mask]) ** 2
                     loss = torch.mean(loss)
                     train_mse_acc_1 = loss.item()
 
-                    # Compute train MSE-pos1
+                    # compute train MSE-pos1
                     simulator.eval()
                     with torch.no_grad():
                         predicted_next_position = simulator(
@@ -487,16 +485,15 @@ def train(args: argparse.Namespace) -> None:
 
                 # multi-step loss
                 elif args.loss_type == 'multi_step':
-                    # Ground truth positions
+                    # ground truth positions
                     current_positions = features['positions'][:, :INPUT_SEQUENCE_LENGTH]
                     
                     non_kinematic_mask = torch.logical_not(get_kinematic_mask(features['particle_types']))
                     
-                    # Lists to store predictions and targets
                     pred_accelerations = []
                     target_accelerations = []
 
-                    # First step: Use ground truth positions
+                    # use ground truth pos's
                     pred_target = simulator.get_predicted_and_target_normalized_accelerations(
                         next_position=target_next_position,
                         position_sequence=current_positions,
@@ -509,7 +506,7 @@ def train(args: argparse.Namespace) -> None:
                     pred_accelerations.append(pred_accel)
                     target_accelerations.append(target_accel)
                     
-                    # Predict next position using current sequence
+                    # pred next pos using curr sequence
                     next_position = simulator(
                         position_sequence=current_positions,
                         n_particles_per_example=features['n_particles_per_example'],
@@ -517,19 +514,19 @@ def train(args: argparse.Namespace) -> None:
                         global_context=features.get('step_context')
                     )
                     
-                    # Additional steps use model's OWN predictions
+                    # steps use model's OWN predictions
                     for step in range(args.n_rollout_steps):
-                        # Update position sequence with predicted position
+                        # update position sequence with predicted position
                         current_positions = torch.cat([
                             current_positions[:, 1:],
                             next_position.unsqueeze(1)
                         ], dim=1)
                         
-                        # Target position
+                        # target position
                         target_idx = INPUT_SEQUENCE_LENGTH + step + 1
                         target_position = features['positions'][:, target_idx]
                         
-                        # Accelerations for next step
+                        # accs for next step
                         pred_target = simulator.get_predicted_and_target_normalized_accelerations(
                             next_position=target_position,
                             position_sequence=current_positions,
@@ -542,7 +539,7 @@ def train(args: argparse.Namespace) -> None:
                         pred_accelerations.append(pred_accel)
                         target_accelerations.append(target_accel)
                         
-                        # Predict next position
+                        # pred next position
                         next_position = simulator(
                             position_sequence=current_positions,
                             n_particles_per_example=features['n_particles_per_example'],
@@ -550,7 +547,7 @@ def train(args: argparse.Namespace) -> None:
                             global_context=features.get('step_context')
                         )
                     
-                    # Compute multi-step loss (average across steps)
+                    # compute multi-step MSE-acc (average across steps)
                     loss = compute_multi_step_loss(
                         pred_accelerations,
                         target_accelerations,
@@ -558,7 +555,7 @@ def train(args: argparse.Namespace) -> None:
                     )
                     train_mse_acc_1 = loss.item()
 
-                    # Compute position MSE for logging
+                    # compute MSE-pos
                     simulator.eval()
                     with torch.no_grad():
                         predicted_next_position = simulator(
@@ -570,32 +567,31 @@ def train(args: argparse.Namespace) -> None:
                         train_mse_pos_1 = F.mse_loss(predicted_next_position, target_next_position).item()
                     simulator.train()
 
-                # Optimization step
+                # optimization step
                 loss.backward()
                 clip_grad_norm_(simulator.parameters(), 1.0)
                 optimizer.step()
 
-                # Update LR with exp decay
+                # handle LR over time
                 if global_step < warmup:
-                    # Linear warmup
+                    # linear warmup
                     current_lr = args.lr * (global_step / warmup)
                 else:
-                    # Exponential decay after warmup
+                    # exponential decay after warmup
                     decay_progress = (global_step - warmup) / (decay_steps - warmup)
                     current_lr = (args.lr - min_lr) * (0.1 ** decay_progress) + min_lr
 
                 for param_group in optimizer.param_groups:
                     param_group['lr'] = current_lr
 
-                # Print progress
                 if global_step % 250 == 0:
                     print(f"{get_elapsed_time(start_time)} "
                           f"Step: {global_step} | "
-                          f"MSE-acc 1: {train_mse_acc_1:.3e} | "
-                          f"MSE-pos 1: {train_mse_pos_1*1e9:.3e}e-9 | "
+                          f"MSE-acc 1: {train_mse_acc_1:.2e} | "
+                          f"MSE-pos 1: {train_mse_pos_1:.2e} | "
                           f"LR: {current_lr:.3e}")
 
-                # Validation
+                # validation loop
                 if global_step % validation_frequency == 0 and global_step > 0:
                     simulator.eval()
                     valid_indices = np.random.choice(num_valid_samples, eval_subset_size, replace=False)
@@ -604,6 +600,8 @@ def train(args: argparse.Namespace) -> None:
                         valid_subset, 
                         collate_fn=one_step_collate,
                         batch_size=args.batch_size,
+                        num_workers=NUM_WORKERS,
+                        pin_memory=True,
                         shuffle=True
                     )
 
@@ -617,7 +615,7 @@ def train(args: argparse.Namespace) -> None:
                                 vfeat['step_context'] = vfeat['step_context'].to(device)
 
                             if args.loss_type == 'one_step':
-                                # Get position prediction
+                                # compute val MSE-pos
                                 vpred = simulator(
                                     position_sequence=vfeat['positions'],
                                     n_particles_per_example=vfeat['n_particles_per_example'],
@@ -626,7 +624,7 @@ def train(args: argparse.Namespace) -> None:
                                 )
                                 pos_loss = F.mse_loss(vpred, vtarget).item()
 
-                                # Get acceleration prediction
+                                # compute val MSE-acc
                                 vpred_target = simulator.get_predicted_and_target_normalized_accelerations(
                                     next_position=vtarget,
                                     position_sequence=vfeat['positions'],
@@ -679,19 +677,20 @@ def train(args: argparse.Namespace) -> None:
                                             vnext_position.unsqueeze(1)
                                         ], dim=1)
                                 
+                                # effectively a null mask
                                 full_scene_mask = torch.ones_like(
                                     get_kinematic_mask(vfeat['particle_types']), 
                                     dtype=torch.bool
                                 )
 
-                                # Compute acceleration loss
+                                # compute val MSE-acc
                                 accel_loss = compute_multi_step_loss(
                                     vpred_accelerations,
                                     vtarget_accelerations,
                                     full_scene_mask
                                 )
 
-                                # Compute position MSE
+                                # compute val MSE-pos
                                 vpred_next_position = simulator(
                                     position_sequence=vcurrent_positions,
                                     n_particles_per_example=vfeat['n_particles_per_example'],
@@ -700,7 +699,6 @@ def train(args: argparse.Namespace) -> None:
                                 )
                                 pos_loss = F.mse_loss(vpred_next_position, vtarget)
 
-                                # Store both metrics
                                 val_losses.append({
                                     'accel': accel_loss.item(),
                                     'pos': pos_loss.item()
@@ -711,17 +709,17 @@ def train(args: argparse.Namespace) -> None:
                     val_mse_pos_history.append(mean_val_pos_loss) # store val MSE-pos history
                     val_mse_acc_history.append(mean_val_acc_loss) # store val MSE-acc history
                     val_steps_history.append(global_step)
-                    print(f"{get_elapsed_time(start_time)} Validation MSE-acc: {mean_val_acc_loss:.3f} | "
-                          f"MSE-pos: {mean_val_pos_loss*1e9:.2f}e-9")
+                    print(f"{get_elapsed_time(start_time)} Validation MSE-acc: {mean_val_acc_loss:.2e} | "
+                          f"MSE-pos: {mean_val_pos_loss:.2e}")
 
-                    # Check for improvement
+                    # check if new best MSE-pos
                     if mean_val_pos_loss < best_val_pos_loss:
                         best_val_pos_loss = mean_val_pos_loss
                         steps_without_improvement = 0
                         print(f"\t\tNew best validation MSE-pos -> Saving model...")
                         checkpoint = {
                             'model_state_dict': simulator.state_dict(),
-                            #'optimizer_state_dict': optimizer.state_dict(),
+                            'optimizer_state_dict': optimizer.state_dict(),
                             'global_step': global_step,
                             'val_mse_pos_history': list(val_mse_pos_history),
                             'val_mse_acc_history': list(val_mse_acc_history),
@@ -732,7 +730,7 @@ def train(args: argparse.Namespace) -> None:
                         steps_without_improvement += 1
                         print(f"\t\tNo improvement. Steps without improvement: {steps_without_improvement}/{patience}")
 
-                    # Early stopping if patience is exceeded
+                    # early stopping
                     if steps_without_improvement >= patience:
                         print("\nEarly stopping triggered - No improvement on validation set.")
                         raise KeyboardInterrupt
@@ -744,11 +742,11 @@ def train(args: argparse.Namespace) -> None:
         print(f"Saving current checkpoint - Step: {global_step}")
     
     print(f"\n{get_elapsed_time(start_time)} Training completed!")
-    print(f"Best validation MSE-pos achieved: {best_val_pos_loss*1e9:.3f}e-9")
+    print(f"Best validation MSE-pos achieved: {best_val_pos_loss:.2e}")
     print(f"Best model saved at: {best_model_path}")
     checkpoint = {
             'model_state_dict': simulator.state_dict(),
-            #'optimizer_state_dict': optimizer.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
             'global_step': global_step,
             'val_mse_pos_history': list(val_mse_pos_history),
             'val_mse_acc_history': list(val_mse_acc_history),
@@ -759,84 +757,118 @@ def train(args: argparse.Namespace) -> None:
         f'{checkpoint_dir}/interrupted_checkpoint.pt'
     )
 
+
 def parse_arguments():
     """Parse command line arguments organized by usage mode."""
     parser = argparse.ArgumentParser(description="Learning to Simulate.")
     
-    # Global arguments (used by all modes)
+    # global args (used by all modes)
     global_group = parser.add_argument_group('Global Arguments')
-    global_group.add_argument('--mode', default='train',
-                        choices=['train', 'eval', 'eval_rollout'],
-                        help='Train model, one step evaluation or rollout evaluation.')
-    global_group.add_argument('--dataset', default="Water", type=str,
-                        help='The dataset directory.')
-    global_group.add_argument('--batch_size', default=2, type=int,
-                        help='The batch size for training and evaluation.')
-    global_group.add_argument('--model_path', default="models", type=str,
-                        help='The path for saving/loading model checkpoints.')
-    global_group.add_argument('--gnn_type', default='interaction_net', 
-                        choices=['interaction_net', 'gat', 'gcn'],
-                        help='The GNN to be used as processor.')
-    global_group.add_argument('--message_passing_steps', default=10, type=int,
-                        help='Number of GNN message passing steps.')
-    global_group.add_argument('--noise_std', default=0.0003, type=float,
-                        help='The std deviation of the noise for training and evaluation.')
+    global_group.add_argument('--mode',
+                              default='train',
+                              choices=['train', 'eval', 'eval_rollout'],
+                              help='Operation mode: train model, evaluate, or rollout evaluation.')
+    global_group.add_argument('--dataset',
+                              default="Water",
+                              type=str,
+                              help='Dataset directory.')
+    global_group.add_argument('--batch_size',
+                              default=2,
+                              type=int,
+                              help='Batch size for training and evaluation.')
+    global_group.add_argument('--model_path',
+                              default="models",
+                              type=str,
+                              help='Path for saving/loading model checkpoints.')
+    global_group.add_argument('--gnn_type',
+                              default='interaction_net',
+                              choices=['interaction_net', 'gat', 'gcn'],
+                              help='Type of GNN to use as processor.')
+    global_group.add_argument('--message_passing_steps',
+                              default=10,
+                              type=int,
+                              help='Number of GNN message passing steps.')
+    global_group.add_argument('--noise_std',
+                              default=0.0003,
+                              type=float,
+                              help='Standard deviation of noise for training and evaluation.')
     
-    # Training-specific arguments
+    # training-specific args
     train_group = parser.add_argument_group('Training Arguments (only used when mode=train)')
-    train_group.add_argument('--num_steps', default=2e7, type=int,
-                        help='Maximum number of training steps.')
-    train_group.add_argument('--seed', type=int, default=483,
-                        help='Random seed for reproducibility.')
-    train_group.add_argument('--lr', type=float, default=1e-4,
-                        help='Initial learning rate.')
-    train_group.add_argument('--weight_decay', type=float, default=0,
-                        help='Weight decay for optimizer.')
-    train_group.add_argument('--loss_type', 
-                          default='one_step',
-                          choices=['one_step', 'multi_step'],
-                          help='Type of loss function to use during training')
-    train_group.add_argument('--n_rollout_steps', 
-                          type=int, 
-                          default=1,
-                          help='Number of rollout steps for multi-step loss')
+    train_group.add_argument('--num_steps',
+                             default=2e7,
+                             type=int,
+                             help='Maximum number of training steps.')
+    train_group.add_argument('--seed',
+                             type=int,
+                             default=483,
+                             help='Random seed for reproducibility.')
+    train_group.add_argument('--lr',
+                             type=float,
+                             default=1e-4,
+                             help='Initial learning rate.')
+    train_group.add_argument('--weight_decay',
+                             type=float,
+                             default=0,
+                             help='Weight decay for optimizer.')
+    train_group.add_argument('--loss_type',
+                             default='one_step',
+                             choices=['one_step', 'multi_step'],
+                             help='Type of loss function to use during training')
+    train_group.add_argument('--n_rollout_steps',
+                             type=int,
+                             default=1,
+                             help='Number of rollout steps for multi-step loss')
     
-    # Evaluation-specific arguments
+    # eval-specific args
     eval_group = parser.add_argument_group('Evaluation Arguments (only used when mode=eval or eval_rollout)')
-    eval_group.add_argument('--eval_split', default='test',
-                        choices=['train', 'valid', 'test'],
-                        help='Dataset split to use for evaluation.')
-    eval_group.add_argument('--output_path', default="rollouts", type=str,
-                        help='Path for saving rollout results (only used in eval_rollout mode).')
-    eval_group.add_argument('--compute_all_metrics', action='store_true',
-                        help='If set, computes all metrics (MSE1, MSE20, MSE400, EMD) instead of just MSE1.')
-    
-    # GNN Architecture arguments
-    gnn_group = parser.add_argument_group('GNN Architecture Arguments')
-    gnn_group.add_argument('--hidden_channels', type=int, default=32,
-                        help='Number of hidden channels in GNN layers.')
-    gnn_group.add_argument('--dropout', type=float, default=0.0,
-                        help='Dropout rate.')
-    gnn_group.add_argument('--num_gnn_layers', type=int, default=2,
-                        help='Number of GNN layers.')
+    eval_group.add_argument('--eval_split',
+                            default='test',
+                            choices=['train', 'valid', 'test'],
+                            help='Dataset split to use for evaluation.')
+    eval_group.add_argument('--output_path',
+                            default="rollouts",
+                            type=str,
+                            help='Path for saving rollout results (only used in eval_rollout mode).')
+    eval_group.add_argument('--compute_all_metrics',
+                            action='store_true',
+                            help='Computes all metrics (MSE1, MSE20, MSE400, EMD) instead of just MSE1.')
     
     # GAT-specific arguments
     gat_group = parser.add_argument_group('GAT-specific Arguments (only used when gnn_type=gat)')
-    gat_group.add_argument('--gat_heads', type=int, default=8,
-                        help='Number of attention heads for GAT.')
-    gat_group.add_argument('--out_heads', type=int, default=1,
-                        help='Number of output heads for GAT.')
+    gat_group.add_argument('--gat_heads',
+                           type=int,
+                           default=8,
+                           help='Number of attention heads.')
+    gat_group.add_argument('--out_heads',
+                           type=int,
+                           default=1,
+                           help='Number of output heads.')
     
-    # TransGNN-specific arguments
-    trans_group = parser.add_argument_group('TransGNN-specific Arguments (only used when gnn_type=trans_gnn)')
-    trans_group.add_argument('--use_bn', action='store_true',
-                        help='Use layer normalization.')
-    trans_group.add_argument('--use_residual', action='store_true',
-                        help='Use residual connections for each GNN layer.')
+    # GNN architecture args
+    gnn_group = parser.add_argument_group('GNN Architecture Arguments')
+    gnn_group.add_argument('--hidden_channels',
+                           type=int,
+                           default=32,
+                           help='Number of hidden channels in GNN layers.')
+    gnn_group.add_argument('--dropout',
+                           type=float,
+                           default=0.0,
+                           help='Dropout rate.')
+    gnn_group.add_argument('--num_gnn_layers',
+                           type=int,
+                           default=2,
+                           help='Number of GNN layers.')
+    gnn_group.add_argument('--use_bn',
+                           action='store_true',
+                           help='Use Batch Normalization in GNN layers.')
+    gnn_group.add_argument('--use_residual',
+                           action='store_true',
+                           help='Use residual connections in GNN layers (only applicable for GCN).')
     
     args = parser.parse_args()
     
-    # Create output directories if they don't exist
+    # create output dirs if don't exist
     os.makedirs(f'{args.model_path}/{args.dataset}/{args.gnn_type}/{args.loss_type}',
                exist_ok=True)
     if args.mode == 'eval_rollout':
@@ -845,6 +877,7 @@ def parse_arguments():
     
     print_args(args)
     return args
+
 
 if __name__ == '__main__':
     args = parse_arguments()

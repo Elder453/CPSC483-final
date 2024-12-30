@@ -1,10 +1,9 @@
-# message_passing.py
-
 import torch
 import torch.nn as nn
 from torch_scatter import scatter
 from typing import Dict, Optional, Tuple, Union
 from dataclasses import dataclass
+
 
 @dataclass
 class GraphData:
@@ -12,6 +11,7 @@ class GraphData:
     node_feat:  torch.Tensor  # [N, F_x] Node features
     edge_index: torch.Tensor  # [2, E] Edge indices
     edge_feat:  torch.Tensor  # [E, F_e] Edge features
+
 
 class EdgeModel(nn.Module):
     """Updates edge features based on source and target node features."""
@@ -39,17 +39,15 @@ class EdgeModel(nn.Module):
             Updated edge features [E, F_e_out]
         """
         #edge_index = edge_index.permute(1, 0)  # [E, 2]
-        sender_features   = x[edge_index[0]]   # Source node features
-        receiver_features = x[edge_index[1]]   # Target node features
-
         # Concatenate all features for edge update
         edge_inputs = torch.cat([
-            sender_features, 
-            receiver_features, 
+            x[edge_index[0]], # sender / source node features 
+            x[edge_index[1]], # receiver / target node features
             edge_attr
         ], dim=-1)
         
         return self.edge_mlp(edge_inputs)
+
 
 class NodeModel(nn.Module):
     """Updates node features based on aggregated edge features."""
@@ -91,6 +89,7 @@ class NodeModel(nn.Module):
         node_inputs = torch.cat([x, aggregated_edges], dim=-1)
         
         return self.node_mlp(node_inputs)
+
 
 class GraphNetwork(nn.Module):
     """Complete graph neural network with edge and node updates."""

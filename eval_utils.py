@@ -3,8 +3,8 @@ import torch.nn.functional as F
 import numpy as np
 from scipy.stats import wasserstein_distance
 
-from noise_utils import get_random_walk_noise_for_position_sequence
 from utils import device
+
 
 def compute_one_step_metrics(simulator, features, labels):
     """Compute one-step prediction metrics: acceleration MSE and position MSE.
@@ -39,6 +39,7 @@ def compute_one_step_metrics(simulator, features, labels):
 
     return pos_mse, accel_mse
 
+
 def compute_mse_n(simulator, features, rollout_op, n_frames=20):
     """Compute MSE averaged across n-frame intervals in rollout.
     Computes both position and acceleration MSE.
@@ -70,6 +71,7 @@ def compute_mse_n(simulator, features, rollout_op, n_frames=20):
     
     return pos_mse, accel_mse
 
+
 def compute_mse_full(simulator, features, rollout_op):
     """Compute MSE averaged across full rollout.
     Computes both position and acceleration MSE.
@@ -86,6 +88,7 @@ def compute_mse_full(simulator, features, rollout_op):
     accel_mse = F.mse_loss(pred_accel, gt_accel).item()
     
     return pos_mse, accel_mse
+
 
 def compute_emd(simulator, features, rollout_op):
     """Compute Earth Mover's Distance between predicted and ground truth distributions.

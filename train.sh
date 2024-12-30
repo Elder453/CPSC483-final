@@ -4,6 +4,6 @@ python main.py \
     --dataset=WaterDropSample \
     --gnn_type=interaction_net \
     --loss_type=one_step \
-    --num_steps=500000 \
+    --num_steps=250000 \
     --batch_size=2 \
-    "$@"  # allow passing additional args (if needed)
+    "$@"

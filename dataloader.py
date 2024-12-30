@@ -1,5 +1,3 @@
-# dataloader.py
-
 import torch
 import pickle
 import os
@@ -10,11 +8,13 @@ from dataclasses import dataclass
 
 INPUT_SEQUENCE_LENGTH = 6
 
+
 @dataclass
 class Features:
     positions: torch.Tensor
     particle_types: torch.Tensor
     step_context: Optional[torch.Tensor] = None
+
 
 class NCDataset:
     """Single-graph dataset container."""
@@ -32,6 +32,7 @@ class NCDataset:
 
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}({len(self)})'
+
 
 class BaseDataset(Dataset):
     """Base class for particle simulation datasets."""
@@ -73,6 +74,7 @@ class BaseDataset(Dataset):
     def __len__(self) -> int:
         return len(self.features['positions'])
 
+
 class OneStepDataset(BaseDataset):
     """Dataset for single-step predictions."""
     def __init__(self, dataset: str = 'Water', split: str = 'train'):
@@ -88,6 +90,7 @@ class OneStepDataset(BaseDataset):
             feature['step_context'] = self.features['step_context'][index]
         return prepare_inputs(feature)
 
+
 class RolloutDataset(BaseDataset):
     """Dataset for trajectory rollouts."""
     def __getitem__(self, index: int) -> Tuple[Dict[str, torch.Tensor], torch.Tensor]:
@@ -98,6 +101,7 @@ class RolloutDataset(BaseDataset):
         if 'step_context' in self.features:
             feature['step_context'] = self.features['step_context'][index]
         return prepare_rollout_inputs(feature)
+
 
 def split_trajectory(features: Dict[str, List[torch.Tensor]], 
                     window_length: int = 7) -> Dict[str, List[torch.Tensor]]:
@@ -124,6 +128,7 @@ def split_trajectory(features: Dict[str, List[torch.Tensor]],
 
     return model_input_features
 
+
 def one_step_collate(batch: List[Tuple]) -> Tuple[Dict[str, torch.Tensor], torch.Tensor]:
     """Collates batches for training."""
     output_dict = {
@@ -139,6 +144,7 @@ def one_step_collate(batch: List[Tuple]) -> Tuple[Dict[str, torch.Tensor], torch
     
     output_target = torch.cat([target for _, target in batch], dim=0)
     return output_dict, output_target
+
 
 def prepare_inputs(tensor_dict: Dict[str, torch.Tensor]) -> Tuple[Dict[str, torch.Tensor], 
                                                                 torch.Tensor]:
@@ -156,6 +162,7 @@ def prepare_inputs(tensor_dict: Dict[str, torch.Tensor]) -> Tuple[Dict[str, torc
         output_dict['step_context'] = tensor_dict['step_context'][-2].unsqueeze(0)
     
     return output_dict, target_position
+
 
 def prepare_rollout_inputs(features: Dict[str, torch.Tensor]) -> Tuple[Dict[str, torch.Tensor], 
                                                                      torch.Tensor]:

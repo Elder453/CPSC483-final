@@ -1,5 +1,3 @@
-# graph_network.py
-
 import torch
 import torch.nn as nn
 from torch_scatter import scatter
@@ -8,6 +6,7 @@ from models import GCN, GAT
 from message_passing import EdgeModel, NodeModel, GraphNetwork
 from typing import Optional, Dict, Union, List
 from dataclasses import dataclass
+
 
 class MLP(nn.Module):
     """Multi-layer perceptron with configurable hidden layers."""
@@ -34,6 +33,7 @@ class MLP(nn.Module):
             x = lin(x)
         return x
 
+
 class EncodeProcessDecode(nn.Module):
     """Encode-Process-Decode architecture for graph neural networks."""
     
@@ -51,7 +51,7 @@ class EncodeProcessDecode(nn.Module):
     ):
         super().__init__()
         
-        # Store configuration
+        # store config
         self._node_input_size = node_input_size
         self._edge_input_size = edge_input_size
         self._latent_size = latent_size
@@ -62,7 +62,7 @@ class EncodeProcessDecode(nn.Module):
         self.device = device
         self.args = args
         
-        # Build network components
+        # build network components
         self._network_builder()
 
     def _build_mlp_with_layer_norm(self, input_size: int) -> nn.Sequential:
@@ -77,11 +77,11 @@ class EncodeProcessDecode(nn.Module):
 
     def _network_builder(self):
         """Builds all network components."""
-        # Build encoders
+        # build encoders
         self.node_encoder = self._build_mlp_with_layer_norm(self._node_input_size)
         self.edge_encoder = self._build_mlp_with_layer_norm(self._edge_input_size)
 
-        # Build processor networks
+        # build processor networks
         self._processor_networks = nn.ModuleList()
         for _ in range(self._num_message_passing_steps):
             if self.args.gnn_type == 'gcn':
@@ -114,7 +114,7 @@ class EncodeProcessDecode(nn.Module):
             
             self._processor_networks.append(processor)
 
-        # Build decoder
+        # build decoder
         self._decoder_network = MLP(
             input_size=self._latent_size,
             hidden_size=self._mlp_hidden_size,
@@ -130,7 +130,7 @@ class EncodeProcessDecode(nn.Module):
                 dim=-1
             )
 
-        # Create latent graph
+        # create latent graph
         latent_graph_0 = NCDataset("latent_graph_0")
         latent_graph_0.graph = {
             'node_feat': self.node_encoder(input_graph.graph['node_feat']),
@@ -141,7 +141,7 @@ class EncodeProcessDecode(nn.Module):
             'edge_index': input_graph.graph['edge_index'].to(input_graph.graph['n_node'].device),
         }
 
-        # Aggregate edge features to nodes
+        # aggregate edge features to nodes
         num_nodes = torch.sum(latent_graph_0.graph['n_node']).item()
         latent_graph_0.graph['node_feat'] += scatter(
             latent_graph_0.graph['edge_feat'],
