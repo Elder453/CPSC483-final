@@ -88,10 +88,31 @@ Within each `bash` script, there are various parameters that may be tuned or cus
 /CPSC483-final/
 ├── datasets/           # Dataset storage
 │   └── WaterDropSample/
+│       ├── train/
+│       ├── valid/
+│       └── test/
 ├── models/             # Saved model checkpoints
 │   └── WaterDropSample/
-└── rollouts/           # Generated rollouts
-    └── WaterDropSample/
+├── rollouts/           # Generated rollouts
+│   └── WaterDropSample/
+├── src/
+│   ├── main.py
+│   ├── dataloader.py
+│   ├── graph_network.py
+│   ├── learned_simulator.py
+│   ├── message_passing.py
+│   ├── models.py
+│   ├── noise_utils.py
+│   ├── render_rollout.py
+│   ├── rollout.py
+│   ├── transform_to_pkl.py
+│   └── utils.py
+├── train.sh
+├── eval.sh
+├── eval_rollout.sh
+├── render_rollout.sh
+├── environment.yml
+└── README.md
 ```
 
 ## Notes
