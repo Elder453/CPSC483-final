@@ -59,19 +59,14 @@ Evaluate single-step predictions:
 bash ./eval.sh
 ```
 
-Generate trajectory rollouts:
+Generate and animate trajectory rollouts:
 ```bash
-bash ./eval_rollout.sh
-```
-
-Animate trajectory rollouts:
-```bash
-bash ./render_rollout.sh
+bash ./rollout.sh
 ```
 
 ## Key Parameters
 
-Within each `bash` script, there are various parameters that may be tuned or customized for usage. For convenience, we have provided a bash script for each of the core functionalities with default behavior; please modify those scripts directly or use the command line for customization deviating from the default behavior (`train.sh`, `eval.sh`, `eval_rollout.sh`, `render_rollout.sh`).
+Within each `bash` script, there are various parameters that may be tuned or customized for usage. For convenience, we have provided a bash script for each of the core functionalities with default behavior; please modify those scripts directly or use the command line for customization deviating from the default behavior (`train.sh`, `eval.sh`, `rollout.sh`).
 
 - `--mode`: Training or evaluation mode (`train`, `eval`, `eval_rollout`)
 - `--dataset`: Name of dataset to use
@@ -109,8 +104,7 @@ Within each `bash` script, there are various parameters that may be tuned or cus
 │   └── utils.py
 ├── train.sh
 ├── eval.sh
-├── eval_rollout.sh
-├── render_rollout.sh
+├── rollout.sh
 ├── environment.yml
 └── README.md
 ```

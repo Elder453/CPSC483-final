@@ -3,6 +3,8 @@ import argparse
 from matplotlib import animation
 import matplotlib.pyplot as plt
 import numpy as np
+import os
+from tqdm import tqdm
 
 TYPE_TO_COLOR = {
     3: "black",   # Boundary particles.
@@ -14,7 +16,7 @@ TYPE_TO_COLOR = {
 
 
 def parse_arguments():
-    parser = argparse.ArgumentParser(description="Render rollout.")
+    parser = argparse.ArgumentParser(description="Render all rollouts in directory.")
     parser.add_argument(
         '--output_path',
         default="rollouts",
@@ -48,22 +50,10 @@ def parse_arguments():
         help='Dataset split to use for evaluation.'
     )
     parser.add_argument(
-        '--time_step',
-        default=0,
-        type=int,
-        help='ID for rollout pkl file.'
-    )
-    parser.add_argument(
         '--step_stride',
         default=3,
         type=int,
         help='Stride of steps to skip.'
-    )
-    parser.add_argument(
-        '--block_on_show',
-        default=True,
-        type=bool,
-        help='For test purposes.'
     )
 
     args = parser.parse_args()
@@ -71,19 +61,22 @@ def parse_arguments():
     return args
 
 
-def main(args):
-    if not args.rollout_path:
-        raise ValueError("A `rollout_path` must be passed.")
-    with open(f"{args.rollout_path}/{args.time_step}.pkl", 'rb') as file:
-        rollout_data = pickle.load(file)
-
+def render_rollout(rollout_data, output_path, step_stride=3):
+    """Render a single rollout pickle file to gif.
+    
+    Args:
+        rollout_data: Dictionary containing rollout data
+        output_path: Path where to save the gif
+        step_stride: Number of steps to skip between frames
+        fps: Frames per second in output gif
+    """
     fig, axes = plt.subplots(1, 2, figsize=(10, 5))
 
     plot_info = []
     for ax_i, (label, rollout_field) in enumerate(
         [("Ground Truth", "ground_truth_rollout"),
          ("Prediction", "predicted_rollout")]):
-        # Append the initial positions to get the full trajectory.
+        # append init positions to get full trajectory
         trajectory = np.concatenate([
             rollout_data["initial_positions"].cpu(),
             rollout_data[rollout_field].cpu()], axis=0) # [time_steps, num_points, num_dimensions]
@@ -115,11 +108,43 @@ def main(args):
     anim = animation.FuncAnimation(
         fig,
         update,
-        frames=np.arange(0, num_steps, args.step_stride),
+        frames=np.arange(0, num_steps, step_stride),
         interval=10
     )
-    anim.save(f"{args.rollout_path}/{args.time_step}.gif", writer='imagemagick', fps=10)
-    # plt.show(block=args.block_on_show)
+    anim.save(output_path, writer='imagemagick', fps=10)
+    plt.close(fig)
+
+
+def main(args):
+    if not os.path.exists(args.rollout_path):
+        raise ValueError(f"Rollout path does not exist: {args.rollout_path}")
+        
+    # get .pkl files in dir
+    pkl_files = [f for f in os.listdir(args.rollout_path) if f.endswith('.pkl')]
+    if not pkl_files:
+        raise ValueError(f"No pickle files found in {args.rollout_path}")
+        
+    print(f"\nFound {len(pkl_files)} pickle files to process")
+    
+    # process each .pkl file
+    for pkl_file in tqdm(pkl_files, desc="Converting rollouts to gifs"):
+        pkl_path = os.path.join(args.rollout_path, pkl_file)
+        gif_path = os.path.join(args.rollout_path, pkl_file.replace('.pkl', '.gif'))
+        
+        # skip if gif already exists
+        if os.path.exists(gif_path):
+            continue
+            
+        try:
+            with open(pkl_path, 'rb') as f:
+                rollout_data = pickle.load(f)
+            render_rollout(
+                rollout_data,
+                gif_path,
+                step_stride=args.step_stride,
+            )
+        except Exception as e:
+            print(f"\nError processing {pkl_file}: {str(e)}")
 
 
 if __name__ == '__main__':

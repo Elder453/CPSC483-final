@@ -199,8 +199,8 @@ def eval(args: argparse.Namespace) -> None:
         metrics.update({
             'mse_pos_20': [],
             'mse_acc_20': [],
-            'mse_pos_400': [],
-            'mse_acc_400': [],
+            'mse_pos_full': [],
+            'mse_acc_full': [],
             'emd': []
         })
         time_step = 0
@@ -222,20 +222,20 @@ def eval(args: argparse.Namespace) -> None:
                 mse_pos_20, mse_acc_20 = compute_mse_n(
                     simulator, features, rollout_op, n_frames=20
                 )
-                mse_pos_400, mse_acc_400 = compute_mse_full(
+                mse_pos_full, mse_acc_full = compute_mse_full(
                     simulator, features, rollout_op
                 )
                 emd = compute_emd(simulator, features, rollout_op)
                 
                 metrics['mse_pos_20'].append(mse_pos_20)
                 metrics['mse_acc_20'].append(mse_acc_20)
-                metrics['mse_pos_400'].append(mse_pos_400)
-                metrics['mse_acc_400'].append(mse_acc_400)
+                metrics['mse_pos_full'].append(mse_pos_full)
+                metrics['mse_acc_full'].append(mse_acc_full)
                 metrics['emd'].append(emd)
 
                 print(f"Trajectory: {time_step}\n"
                         f"\tMSE-pos 20:   {mse_pos_20:.3e} | MSE-acc 20:   {mse_acc_20:.3e}\n"
-                        f"\tMSE-pos full: {mse_pos_400:.3e} | MSE-acc full: {mse_acc_400:.3e}\n"
+                        f"\tMSE-pos full: {mse_pos_full:.3e} | MSE-acc full: {mse_acc_full:.3e}\n"
                         f"\tEMD: {emd:.3e}")
                 time_step += 1
 
@@ -283,7 +283,7 @@ def eval_rollout(args):
     file_name = None
 
     for file in files:
-        if file.startswith('best_val_mse'):
+        if file.startswith('best'):
             file_name = os.path.join(model_path, file)
             break
 
@@ -313,13 +313,13 @@ def eval_rollout(args):
             rollout_op = rollout(simulator, feature, num_steps)
             rollout_op['metadata'] = metadata
             
-            # calculate losses
+            # compute MSE-pos losses
             loss_mse = mse_loss(
                 rollout_op['predicted_rollout'], 
                 rollout_op['ground_truth_rollout']
             )
             total_loss.append(loss_mse)
-            print(f"Step: {time_step} | Rollout Loss MSE: {loss_mse:.3e}")
+            print(f"Trajectory Rollout #{time_step} | MSE-pos: {loss_mse:.3e}")
 
             # save rollout results
             file_name = f'{time_step}.pkl'
@@ -405,7 +405,7 @@ def train(args: argparse.Namespace) -> None:
     val_mse_acc_history = deque()
     val_steps_history = deque()
     global_step = 0
-    patience = 100
+    patience = 50
     steps_without_improvement = 0
 
     # checkpoint set up
@@ -508,7 +508,7 @@ def train(args: argparse.Namespace) -> None:
                     # compute train MSE-acc1 on non-kinematic particles
                     loss = (pred_acceleration[non_kinematic_mask] - target_acceleration[non_kinematic_mask]) ** 2
                     loss = torch.mean(loss)
-                    train_mse_acc_1 = loss.item()
+                    train_mse_acc = loss.item()
 
                     # compute train MSE-pos1
                     simulator.eval()
@@ -519,92 +519,61 @@ def train(args: argparse.Namespace) -> None:
                             particle_types=features['particle_types'],
                             global_context=features.get('step_context')
                         )
-                        train_mse_pos_1 = F.mse_loss(predicted_next_position, target_next_position).item()
+                        train_mse_pos = F.mse_loss(predicted_next_position, target_next_position).item()
                     simulator.train()
 
-                # multi-step loss
+                # multi-step train loss
                 elif args.loss_type == 'multi_step':
                     # ground truth positions
                     current_positions = features['positions'][:, :INPUT_SEQUENCE_LENGTH]
-                    
                     non_kinematic_mask = torch.logical_not(get_kinematic_mask(features['particle_types']))
                     
+                    n_steps = args.n_rollout_steps + 1
                     pred_accelerations = []
                     target_accelerations = []
-
-                    # use ground truth pos's
-                    pred_target = simulator.get_predicted_and_target_normalized_accelerations(
-                        next_position=target_next_position,
-                        position_sequence=current_positions,
-                        position_sequence_noise=torch.zeros_like(current_positions),
-                        n_particles_per_example=features['n_particles_per_example'],
-                        particle_types=features['particle_types'],
-                        global_context=features.get('step_context')
-                    )
-                    pred_accel, target_accel = pred_target
-                    pred_accelerations.append(pred_accel)
-                    target_accelerations.append(target_accel)
-                    
-                    # pred next pos using curr sequence
-                    next_position = simulator(
-                        position_sequence=current_positions,
-                        n_particles_per_example=features['n_particles_per_example'],
-                        particle_types=features['particle_types'],
-                        global_context=features.get('step_context')
-                    )
                     
                     # steps use model's OWN predictions
-                    for step in range(args.n_rollout_steps):
-                        # update position sequence with predicted position
-                        current_positions = torch.cat([
-                            current_positions[:, 1:],
-                            next_position.unsqueeze(1)
-                        ], dim=1)
+                    for step in range(n_steps):
+                        # ground-truth next position at this step
+                        target_position = features['positions'][:, INPUT_SEQUENCE_LENGTH + step]
                         
-                        # target position
-                        target_idx = INPUT_SEQUENCE_LENGTH + step + 1
-                        target_position = features['positions'][:, target_idx]
-                        
-                        # accs for next step
-                        pred_target = simulator.get_predicted_and_target_normalized_accelerations(
+                        # pred & tgt acc
+                        pred_accel, tgt_accel = simulator.get_predicted_and_target_normalized_accelerations(
                             next_position=target_position,
                             position_sequence=current_positions,
-                            position_sequence_noise=torch.zeros_like(current_positions),
+                            position_sequence_noise=torch.zeros_like(current_positions), # no added noise
                             n_particles_per_example=features['n_particles_per_example'],
                             particle_types=features['particle_types'],
                             global_context=features.get('step_context')
                         )
-                        pred_accel, target_accel = pred_target
                         pred_accelerations.append(pred_accel)
-                        target_accelerations.append(target_accel)
-                        
-                        # pred next position
-                        next_position = simulator(
-                            position_sequence=current_positions,
-                            n_particles_per_example=features['n_particles_per_example'],
-                            particle_types=features['particle_types'],
-                            global_context=features.get('step_context')
-                        )
-                    
-                    # compute multi-step MSE-acc (average across steps)
-                    loss = compute_multi_step_loss(
-                        pred_accelerations,
-                        target_accelerations,
-                        non_kinematic_mask
-                    )
-                    train_mse_acc_1 = loss.item()
+                        target_accelerations.append(tgt_accel)
 
-                    # compute MSE-pos
-                    simulator.eval()
-                    with torch.no_grad():
+                        # pred next pos
                         predicted_next_position = simulator(
                             position_sequence=current_positions,
                             n_particles_per_example=features['n_particles_per_example'],
                             particle_types=features['particle_types'],
                             global_context=features.get('step_context')
                         )
-                        train_mse_pos_1 = F.mse_loss(predicted_next_position, target_next_position).item()
-                    simulator.train()
+
+                        # update pos sequence with predicted pos
+                        current_positions = torch.cat([
+                            current_positions[:, 1:],
+                            predicted_next_position.unsqueeze(1)
+                        ], dim=1)
+                    
+                    # avg MSE-acc across steps
+                    loss = compute_multi_step_loss(
+                        pred_accelerations,
+                        target_accelerations,
+                        non_kinematic_mask
+                    )
+                    train_mse_acc = loss.item()
+
+                    # compute MSE-pos (FINAL predicted_next_position vs ground-truth)
+                    final_ground_truth_pos = features['positions'][:, INPUT_SEQUENCE_LENGTH + (n_steps - 1)]
+                    train_mse_pos = F.mse_loss(predicted_next_position, final_ground_truth_pos).item()
 
                 # optimization step
                 loss.backward()
@@ -622,12 +591,13 @@ def train(args: argparse.Namespace) -> None:
 
                 for param_group in optimizer.param_groups:
                     param_group['lr'] = current_lr
-
+                
+                # logging
                 if global_step % 250 == 0:
                     print(f"{get_elapsed_time(start_time)} "
                           f"Step: {global_step} | "
-                          f"MSE-acc 1: {train_mse_acc_1:.2e} | "
-                          f"MSE-pos 1: {train_mse_pos_1:.2e} | "
+                          f"MSE-acc: {train_mse_acc:.2e} | "
+                          f"MSE-pos: {train_mse_pos:.2e} | "
                           f"LR: {current_lr:.3e}")
 
                 # validation loop
@@ -680,19 +650,18 @@ def train(args: argparse.Namespace) -> None:
                                     'pos': pos_loss
                                 })
                             
-                            # multi-step loss
+                            # multi-step val loss
                             elif args.loss_type == 'multi_step':
                                 vcurrent_positions = vfeat['positions'][:, :INPUT_SEQUENCE_LENGTH]
                                 vpred_accelerations = []
                                 vtarget_accelerations = []
                                 
                                 for step in range(args.n_rollout_steps + 1):
-                                    if step == 0:
-                                        vtarget_pos = vtarget
-                                    else:
-                                        vtarget_pos = vfeat['positions'][:, INPUT_SEQUENCE_LENGTH + step]
+                                    # gt next pos
+                                    vtarget_pos = vfeat['positions'][:, INPUT_SEQUENCE_LENGTH + step]
 
-                                    vpred_target = simulator.get_predicted_and_target_normalized_accelerations(
+                                    # pred vs. gt normalized acc
+                                    vpred_accel, vtarget_accel = simulator.get_predicted_and_target_normalized_accelerations(
                                         next_position=vtarget_pos,
                                         position_sequence=vcurrent_positions,
                                         position_sequence_noise=torch.zeros_like(vcurrent_positions),
@@ -700,23 +669,25 @@ def train(args: argparse.Namespace) -> None:
                                         particle_types=vfeat['particle_types'],
                                         global_context=vfeat.get('step_context')
                                     )
-                                    vpred_accel, vtarget_accel = vpred_target
                                     vpred_accelerations.append(vpred_accel)
                                     vtarget_accelerations.append(vtarget_accel)
 
+                                    # pred next pos
+                                    vpred_next_position = simulator(
+                                        position_sequence=vcurrent_positions,
+                                        n_particles_per_example=vfeat['n_particles_per_example'],
+                                        particle_types=vfeat['particle_types'],
+                                        global_context=vfeat.get('step_context')
+                                    )
+
+                                    # slide window
                                     if step < args.n_rollout_steps:
-                                        vnext_position = simulator(
-                                            position_sequence=vcurrent_positions,
-                                            n_particles_per_example=vfeat['n_particles_per_example'],
-                                            particle_types=vfeat['particle_types'],
-                                            global_context=vfeat.get('step_context')
-                                        )
                                         vcurrent_positions = torch.cat([
                                             vcurrent_positions[:, 1:],
-                                            vnext_position.unsqueeze(1)
+                                            vpred_next_position.unsqueeze(1)
                                         ], dim=1)
                                 
-                                # effectively a null mask
+                                # “full_scene_mask” to measure over all particles
                                 full_scene_mask = torch.ones_like(
                                     get_kinematic_mask(vfeat['particle_types']), 
                                     dtype=torch.bool
@@ -730,13 +701,8 @@ def train(args: argparse.Namespace) -> None:
                                 )
 
                                 # compute val MSE-pos
-                                vpred_next_position = simulator(
-                                    position_sequence=vcurrent_positions,
-                                    n_particles_per_example=vfeat['n_particles_per_example'],
-                                    particle_types=vfeat['particle_types'],
-                                    global_context=vfeat.get('step_context')
-                                )
-                                pos_loss = F.mse_loss(vpred_next_position, vtarget)
+                                final_ground_truth_pos = vfeat['positions'][:, INPUT_SEQUENCE_LENGTH + args.n_rollout_steps]
+                                pos_loss = F.mse_loss(vpred_next_position, final_ground_truth_pos)
 
                                 val_losses.append({
                                     'accel': accel_loss.item(),
