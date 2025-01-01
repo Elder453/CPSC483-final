@@ -131,9 +131,9 @@ def main(args):
         pkl_path = os.path.join(args.rollout_path, pkl_file)
         gif_path = os.path.join(args.rollout_path, pkl_file.replace('.pkl', '.gif'))
         
-        # skip if gif already exists
-        if os.path.exists(gif_path):
-            continue
+        # # skip if gif already exists
+        # if os.path.exists(gif_path):
+        #     continue
             
         try:
             with open(pkl_path, 'rb') as f:
