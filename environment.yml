@@ -1,16 +1,18 @@
-name: learn-to-sim
+name: learn-to-sim2
+
 channels:
   - pytorch
   - nvidia
   - pyg
   - conda-forge
   - defaults
+
 dependencies:
   - python=3.10
+  - pytorch-cuda=12.4
   - pytorch
   - torchvision
   - torchaudio
-  - pytorch-cuda=12.4
   - pyg
   - torch-scatter
   - scikit-learn
@@ -19,8 +21,11 @@ dependencies:
   - pip
   - pip:
     - matplotlib
-pin_packages:
-  - pytorch
-  - pytorch-cuda=12.4
-  - torchaudio
-  - torchvision
+    - tensorflow
+
+variables:
+  CONDA_PINNED_PACKAGES:
+    - pytorch
+    - torchaudio
+    - torchvision
+    - pytorch-cuda=12.4
