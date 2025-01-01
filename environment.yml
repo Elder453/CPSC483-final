@@ -1,4 +1,4 @@
-name: learn-to-sim2
+name: learn-to-sim
 
 channels:
   - pytorch
