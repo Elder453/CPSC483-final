@@ -54,7 +54,7 @@ bash ./train.sh
 
 ### Evaluation
 
-Evaluate single-step predictions:
+Evaluate model predictions:
 ```bash
 bash ./eval.sh
 ```

@@ -30,7 +30,7 @@ echo "Current directory: $(pwd)"
 echo "======================================="
 
 DATASET="Goop"
-GNN_TYPE="interactive_net"
+GNN_TYPE="interaction_net"
 LOSS_TYPE="multi_step"
 
 echo "Dataset: ${DATASET}"
