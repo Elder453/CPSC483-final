@@ -405,7 +405,7 @@ def train(args: argparse.Namespace) -> None:
     val_mse_acc_history = deque()
     val_steps_history = deque()
     global_step = 0
-    patience = 50
+    patience = 30
     steps_without_improvement = 0
 
     # checkpoint set up

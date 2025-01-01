@@ -1,15 +1,15 @@
 #!/bin/bash
 #SBATCH --job-name=learn_sim_train_gpu
 #SBATCH --partition=scavenge_gpu
-#SBATCH --time=24:00:00
+#SBATCH --time=16:00:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem-per-cpu=15G
 #SBATCH --gpus=a100:1
 #SBATCH --mail-type=ALL
 #SBATCH --requeue
-#SBATCH --output=./slogs/full_%j.out
-#SBATCH --error=./slogs/full_%j.err
+#SBATCH --output=./slogs/2full_%j.out
+#SBATCH --error=./slogs/2full_%j.err
 
 module load miniconda
 
@@ -29,9 +29,9 @@ echo "Using Conda environment: $(conda info --envs | grep '*' | awk '{print $1}'
 echo "Current directory: $(pwd)"
 echo "======================================="
 
-DATASET="Goop"
+DATASET="WaterDropSample"
 GNN_TYPE="interaction_net"
-LOSS_TYPE="multi_step"
+LOSS_TYPE="one_step"
 
 echo "Dataset: ${DATASET}"
 echo "GNN: ${GNN_TYPE}"

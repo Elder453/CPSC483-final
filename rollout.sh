@@ -2,8 +2,7 @@
 
 DATASET="WaterDropSample"
 GNN_TYPE="interaction_net"
-LOSS_TYPE="multi_step"
-EVAL_SPLIT="test"
+LOSS_TYPE="one_step"
 
 
 python ./src/main.py \
@@ -11,7 +10,7 @@ python ./src/main.py \
     --dataset=$DATASET \
     --gnn_type=$GNN_TYPE \
     --loss_type=$LOSS_TYPE \
-    --eval_split=$EVAL_SPLIT
+    --eval_split=test
 
 
 python ./src/render_rollout.py \
@@ -19,5 +18,5 @@ python ./src/render_rollout.py \
     --dataset=$DATASET \
     --gnn_type=$GNN_TYPE \
     --loss_type=$LOSS_TYPE \
-    --eval_split=$EVAL_SPLIT \
+    --eval_split=test \
     --step_stride=3
