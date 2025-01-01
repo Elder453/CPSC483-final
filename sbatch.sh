@@ -29,9 +29,9 @@ echo "Using Conda environment: $(conda info --envs | grep '*' | awk '{print $1}'
 echo "Current directory: $(pwd)"
 echo "======================================="
 
-DATASET="Sand"
-GNN_TYPE="interaction_net"
-LOSS_TYPE="one_step"
+DATASET="Goop"
+GNN_TYPE="interactive_net"
+LOSS_TYPE="multi_step"
 
 
 python ./src/main.py \
