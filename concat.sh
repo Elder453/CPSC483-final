@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Script Name: concat.sh
-# Description: Concatenates all .py files in the current directory into a single .txt file.
+# Description: Concatenates all .py files in the src directory into a single .txt file.
 #              Each file's content is prefixed with its filename for easy identification.
 # Usage: ./concat.sh
 
@@ -23,7 +23,7 @@ fi
 
 # Iterate over each .py file and append its content to the output file
 for FILE in "${PY_FILES[@]}"; do
-    echo "===== $FILE =====" >> "$OUTPUT_FILE"       # Prefix with filename
+    echo "===== $FILE =====" >> "$OUTPUT_FILE"      # Prefix with filename
     cat "$FILE" >> "$OUTPUT_FILE"                   # Append file content
     echo -e "\n\n" >> "$OUTPUT_FILE"                # Add spacing between files
 done

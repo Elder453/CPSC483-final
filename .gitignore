@@ -9,6 +9,5 @@ rollouts/*
 slogs/*
 
 # Local scripts
-concat.sh
 combined_py_files.txt
 deprecated/
