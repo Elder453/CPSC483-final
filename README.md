@@ -97,15 +97,18 @@ Within each `bash` script, there are various parameters that may be tuned or cus
 │   ├── learned_simulator.py
 │   ├── message_passing.py
 │   ├── models.py
-│   ├── noise_utils.py
 │   ├── render_rollout.py
 │   ├── rollout.py
-│   ├── transform_to_pkl.py
+│   ├── utils_connectivity.py
+│   ├── utils_eval.py
+│   ├── utils_noise.py
 │   └── utils.py
+├── environment.yml
+├── transform_to_pkl.py
+├── download_dataset.sh
 ├── train.sh
 ├── eval.sh
 ├── rollout.sh
-├── environment.yml
 └── README.md
 ```
 

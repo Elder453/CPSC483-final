@@ -5,4 +5,5 @@ python ./src/main.py \
     --gnn_type=interaction_net \
     --loss_type=multi_step \
     --num_steps=500000 \
-    --batch_size=2
+    --batch_size=2 \
+    --use_bn

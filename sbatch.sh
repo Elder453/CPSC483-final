@@ -33,6 +33,9 @@ DATASET="Goop"
 GNN_TYPE="interactive_net"
 LOSS_TYPE="multi_step"
 
+echo "Dataset: ${DATASET}"
+echo "GNN: ${GNN_TYPE}"
+echo "Loss: ${LOSS_TYPE}"
 
 python ./src/main.py \
     --mode=train \
@@ -40,7 +43,8 @@ python ./src/main.py \
     --gnn_type=$GNN_TYPE \
     --loss_type=$LOSS_TYPE \
     --num_steps=500000 \
-    --batch_size=2
+    --batch_size=2 \
+    --use_bn
 
 python ./src/main.py \
     --mode=eval \

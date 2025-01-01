@@ -3,6 +3,7 @@ import torch.nn.functional as F
 import numpy as np
 from scipy.stats import wasserstein_distance
 
+# local imports
 from utils import device
 
 
@@ -14,7 +15,7 @@ def compute_one_step_metrics(simulator, features, labels):
             - accel_mse: MSE between predicted and target accelerations
             - pos_mse: MSE between predicted and target positions
     """
-    # Get position prediction
+    # get position prediction
     predicted_next_position = simulator(
         position_sequence=features['positions'],
         n_particles_per_example=features['n_particles_per_example'],
@@ -22,7 +23,7 @@ def compute_one_step_metrics(simulator, features, labels):
         global_context=features.get('step_context')
     )
 
-    # Get acceleration predictions and targets
+    # get acceleration predictions and targets
     pred_target = simulator.get_predicted_and_target_normalized_accelerations(
         next_position=labels,  # target_next_position
         position_sequence=features['positions'],
@@ -33,7 +34,7 @@ def compute_one_step_metrics(simulator, features, labels):
     )
     pred_acceleration, target_acceleration = pred_target
 
-    # Calculate losses
+    # calculate losses
     accel_mse = F.mse_loss(pred_acceleration, target_acceleration).item()
     pos_mse = F.mse_loss(predicted_next_position, labels).item()
 
@@ -58,14 +59,14 @@ def compute_mse_n(simulator, features, rollout_op, n_frames=20):
     pred_accel = rollout_op['predicted_accelerations']
     gt_accel = rollout_op['target_accelerations']
     
-    # Sample every n frames
+    # sample every n frames
     indices = torch.arange(0, pred_rollout.size(0), n_frames)
     pred_pos_samples = pred_rollout[indices]
     gt_pos_samples = gt_rollout[indices]
     pred_accel_samples = pred_accel[indices]
     gt_accel_samples = gt_accel[indices]
     
-    # Compute MSE averaged across time, particles and spatial dimensions
+    # compute MSE averaged across time, particles and spatial dimensions
     pos_mse = F.mse_loss(pred_pos_samples, gt_pos_samples).item()
     accel_mse = F.mse_loss(pred_accel_samples, gt_accel_samples).item()
     
@@ -98,22 +99,22 @@ def compute_emd(simulator, features, rollout_op):
     pred_rollout = rollout_op['predicted_rollout'].cpu().numpy()
     gt_rollout = rollout_op['ground_truth_rollout'].cpu().numpy()
     
-    # Initialize total EMD
+    # initialize total EMD
     total_emd = 0.0
     n_timesteps = pred_rollout.shape[0]
     
     for t in range(n_timesteps):
-        # Get positions at current timestep
+        # get positions at current timestep
         pred_pos = pred_rollout[t]  # [num_particles, 2]
         gt_pos = gt_rollout[t]      # [num_particles, 2]
         
-        # Compute EMD separately for x and y coordinates
+        # compute EMD separately for x and y coordinates
         emd_x = wasserstein_distance(pred_pos[:, 0], gt_pos[:, 0])
         emd_y = wasserstein_distance(pred_pos[:, 1], gt_pos[:, 1])
         
-        # Take average of x and y EMDs
+        # take average of x and y EMDs
         timestep_emd = (emd_x + emd_y) / 2
         total_emd += timestep_emd
     
-    # Return average EMD across timesteps
+    # average EMD across timesteps
     return total_emd / n_timesteps

@@ -4,7 +4,7 @@ import json
 import os
 import random
 import time
-from typing import Dict, Any, Union, NamedTuple, List
+from typing import Dict, Any, List
 
 # 3rd-party imports
 import multiprocessing as mp
@@ -22,7 +22,7 @@ def get_cpu_count():
     return mp.cpu_count()
 
 # constants
-INPUT_SEQUENCE_LENGTH = 6  # For calculating last 5 velocities
+INPUT_SEQUENCE_LENGTH = 6  # for calculating last 5 velocities
 NUM_PARTICLE_TYPES = 9
 KINEMATIC_PARTICLE_ID = 3
 NUM_WORKERS = get_cpu_count() - 1
@@ -92,30 +92,30 @@ def compute_multi_step_loss(
         ValueError: If prediction and target lists have different lengths
         ValueError: If any acceleration tensors have inconsistent shapes
     """
-    # Validate inputs
+    # validate inputs
     if len(preds) != len(targets):
         raise ValueError(
             f"Prediction and target lists must have same length."
             f"Got {len(preds)} and {len(targets)}"
         )
     
-    # Initialize total loss
+    # init total loss
     total_loss = torch.tensor(0.0, device=device)
     
-    # Accumulate loss for each step
+    # accumulate loss for each step
     for pred, target in zip(preds, targets):
-        # Validate tensor shapes
+        # validate tensor shapes
         if pred.shape != target.shape:
             raise ValueError(
                 f"Prediction and target shapes must match. "
                 f"Got {pred.shape} and {target.shape}"
             )
             
-        # Compute squared error for non-kinematic particles
+        # compute squared error for non-kinematic particles
         step_loss = (pred[non_kinematic_mask] - target[non_kinematic_mask]) ** 2
         total_loss += torch.sum(step_loss)
     
-    # Average loss across both steps and particles
+    # avg loss across both steps and particles
     num_non_kinematic = torch.sum(non_kinematic_mask.to(torch.float32))
     avg_loss = total_loss / (num_non_kinematic * len(preds))
     

@@ -11,7 +11,8 @@ python ./src/main.py \
     --gnn_type=$GNN_TYPE \
     --loss_type=$LOSS_TYPE \
     --num_steps=500000 \
-    --batch_size=2
+    --batch_size=2 \
+    --use_bn
 
 python ./src/main.py \
     --mode=eval \

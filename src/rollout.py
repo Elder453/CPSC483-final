@@ -1,7 +1,9 @@
 import torch
 from typing import Dict, List, Optional, Tuple, Union
-from utils import INPUT_SEQUENCE_LENGTH, get_kinematic_mask
 from torch import Tensor
+
+# local imports
+from utils import INPUT_SEQUENCE_LENGTH, get_kinematic_mask
 
 
 def rollout(
@@ -28,12 +30,12 @@ def rollout(
             - particle_types: Particle type IDs
             - global_context: Optional global features
     """
-    # Extract initial conditions
+    # extract initial conditions
     initial_positions = features['positions'][:, 0:INPUT_SEQUENCE_LENGTH]
     ground_truth_positions = features['positions'][:, INPUT_SEQUENCE_LENGTH:]
     global_context = features.get('step_context')
 
-    # Store acceleration
+    # store acceleration
     predicted_accelerations = []
     target_accelerations = []
 
@@ -52,13 +54,13 @@ def rollout(
         Returns:
             Tuple of (next step, next positions, updated predictions)
         """
-        # Get global context for current step if available
+        # get global context for current step if available
         if global_context is None:
             global_context_step = None
         else:
             global_context_step = global_context[step + INPUT_SEQUENCE_LENGTH - 1].unsqueeze(0)
 
-        # Predict next position
+        # predict next position
         next_position = simulator(
             current_positions,
             n_particles_per_example=features['n_particles_per_example'],
@@ -66,36 +68,36 @@ def rollout(
             global_context=global_context_step
         )
 
-        # Compute accelerations for current step
+        # compute accelerations for current step
         pred_target = simulator.get_predicted_and_target_normalized_accelerations(
-            next_position=ground_truth_positions[:, step],  # Target position
+            next_position=ground_truth_positions[:, step],  # target pos
             position_sequence=current_positions,
-            position_sequence_noise=torch.zeros_like(current_positions),  # No noise during rollout
+            position_sequence_noise=torch.zeros_like(current_positions),  # no noise during rollout
             n_particles_per_example=features['n_particles_per_example'],
             particle_types=features['particle_types'],
             global_context=global_context_step
         )
         pred_accel, target_accel = pred_target
         
-        # Store acceleration data
+        # store acceleration data
         predicted_accelerations.append(pred_accel)
         target_accelerations.append(target_accel)
 
-        # Apply kinematic constraints
+        # apply kinematic constraints
         kinematic_mask = get_kinematic_mask(features['particle_types']).unsqueeze(1).tile(2)
         next_position_ground_truth = ground_truth_positions[:, step]
         next_position = torch.where(kinematic_mask, next_position_ground_truth, next_position)
         predictions.append(next_position)
 
-        # Update position sequence
+        # update position sequence
         next_positions = torch.cat([
-            current_positions[:, 1:],   # Remove oldest position
-            next_position.unsqueeze(1)  # Add new position
+            current_positions[:, 1:],   # remove oldest position
+            next_position.unsqueeze(1)  # add new position
         ], dim=1)
 
         return step + 1, next_positions, predictions
 
-    # Run simulation
+    # run simulation
     current_step = 0
     predictions: List[Tensor] = []
     current_positions = initial_positions
@@ -105,7 +107,7 @@ def rollout(
             current_step, current_positions, predictions
         )
 
-    # Prepare output
+    # prepare output
     output_dict = {
         'initial_positions': torch.transpose(initial_positions, 0, 1),
         'predicted_rollout': torch.stack(predictions),

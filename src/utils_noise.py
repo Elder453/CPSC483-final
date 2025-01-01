@@ -1,6 +1,8 @@
 import torch
 from typing import Union, Tuple
 import numpy as np
+
+# local imports
 from learned_simulator import time_diff
 
 
@@ -28,14 +30,14 @@ def get_random_walk_noise_for_position_sequence(
         integrated to get position noise. The noise at each step is scaled
         so that the final step has the desired standard deviation.
     """
-    # Calculate velocity sequence from positions
+    # calculate velocity sequence from positions
     velocity_sequence = time_diff(position_sequence)
 
-    # Calculate number of velocity steps
+    # calculate number of velocity steps
     num_velocities = velocity_sequence.shape[1]
 
-    # Generate velocity noise
-    # Scale is set so that accumulated noise at last step has desired std
+    # generate velocity noise
+    # scale is set so that accumulated noise at last step has desired std
     step_noise_std = noise_std_last_step / np.sqrt(num_velocities)
     velocity_noise = torch.randn_like(
         velocity_sequence,
@@ -43,11 +45,11 @@ def get_random_walk_noise_for_position_sequence(
         device=position_sequence.device
     ) * step_noise_std
 
-    # Accumulate velocity noise over time
+    # accumulate velocity noise over time
     velocity_noise.cumsum_(dim=1)
 
-    # Integrate velocity noise to get position noise
-    # Start with zero noise at first position
+    # integrate velocity noise to get position noise
+    # start with zero noise at first position
     position_noise = torch.zeros_like(position_sequence)
     position_noise[:, 1:] = velocity_noise.cumsum(dim=1)
 

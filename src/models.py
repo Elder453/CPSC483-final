@@ -131,7 +131,7 @@ class GAT(nn.Module):
         x = data.graph['node_feat']
         x = F.dropout(x, p=self.dropout, training=self.training)
         
-        # Add gradient clipping
+        # add gradient clipping
         torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=1.0)
         
         for i, conv in enumerate(self.convs[:-1]):

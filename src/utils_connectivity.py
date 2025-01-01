@@ -62,7 +62,7 @@ def compute_connectivity_for_batch(
     positions_per_graph_list = np.split(positions, np.cumsum(n_node[:-1]), axis=0)
     num_nodes_in_previous_graphs = 0
 
-    # Compute connectivity for each graph in the batch.
+    # compute connectivity for each graph in the batch
     for i, positions_graph_i in enumerate(positions_per_graph_list):
         senders_graph_i, receivers_graph_i = _compute_connectivity(
             positions_graph_i, radius, add_self_edges)
@@ -74,7 +74,7 @@ def compute_connectivity_for_batch(
 
         num_nodes_in_previous_graphs += positions_graph_i.shape[0]
 
-    # Concatenate all of the results.
+    # concat all results
     senders = torch.tensor(np.concatenate(senders_list, axis=0),
                           dtype=torch.int64, device=device)
     receivers = torch.tensor(np.concatenate(receivers_list, axis=0),

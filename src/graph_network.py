@@ -1,11 +1,13 @@
 import torch
 import torch.nn as nn
 from torch_scatter import scatter
+from typing import List
+
+# local imports
 from dataloader import NCDataset
 from models import GCN, GAT
 from message_passing import EdgeModel, NodeModel, GraphNetwork
-from typing import Optional, Dict, Union, List
-from dataclasses import dataclass
+
 
 
 class MLP(nn.Module):

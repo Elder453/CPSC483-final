@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from torch_scatter import scatter
-from typing import Dict, Optional, Tuple, Union
+from typing import Dict, Optional, Tuple
 from dataclasses import dataclass
 
 
@@ -38,8 +38,8 @@ class EdgeModel(nn.Module):
         Returns:
             Updated edge features [E, F_e_out]
         """
-        #edge_index = edge_index.permute(1, 0)  # [E, 2]
-        # Concatenate all features for edge update
+        # edge_index = edge_index.permute(1, 0)  # [E, 2]
+        # concat all features for edge update
         edge_inputs = torch.cat([
             x[edge_index[0]], # sender / source node features 
             x[edge_index[1]], # receiver / target node features
@@ -76,16 +76,16 @@ class NodeModel(nn.Module):
         """
         num_nodes = x.size(0)
         
-        # Aggregate incoming edge features for each node
+        # aggregate incoming edge features for each node
         aggregated_edges = scatter(
-            edge_attr,              # Edge features to aggregate
-            edge_index[1],          # Target node indices
-            dim=0,                  # Dimension to aggregate along
-            dim_size=num_nodes,     # Number of nodes
-            reduce='mean'           # Aggregation function
+            edge_attr,              # edge features to aggregate
+            edge_index[1],          # target node indices
+            dim=0,                  # dimension to aggregate along
+            dim_size=num_nodes,     # number of nodes
+            reduce='mean'           # aggregation function
         )
         
-        # Concatenate node features with aggregated edge features
+        # concat node features with aggregated edge features
         node_inputs = torch.cat([x, aggregated_edges], dim=-1)
         
         return self.node_mlp(node_inputs)
@@ -128,11 +128,11 @@ class GraphNetwork(nn.Module):
         edge_index = graph['edge_index']
         edge_attr = graph['edge_feat']
         
-        # Update edge features if edge model exists
+        # update edge features if edge model exists
         if self.edge_model is not None:
             edge_attr = self.edge_model(x, edge_index, edge_attr)
 
-        # Update node features if node model exists
+        # update node features if node model exists
         if self.node_model is not None:
             x = self.node_model(x, edge_index, edge_attr)
 

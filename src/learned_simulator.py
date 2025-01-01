@@ -1,17 +1,16 @@
-# learned_simulator.py
-
 import torch
 import torch.nn as nn
 from typing import List, Dict, Optional, Tuple, NamedTuple
 import numpy as np
 
-from connectivity_utils import compute_connectivity_for_batch
+# local imports
+from utils_connectivity import compute_connectivity_for_batch
 from dataloader import NCDataset
 from graph_network import EncodeProcessDecode
-from utils import compute_multi_step_loss
+from utils import INPUT_SEQUENCE_LENGTH
 
+# constants
 STD_EPSILON = 1e-8
-INPUT_SEQUENCE_LENGTH = 6
 
 
 class NormalizationStats(NamedTuple):

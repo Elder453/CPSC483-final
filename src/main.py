@@ -5,7 +5,7 @@ import pickle
 import signal
 import time
 from collections import deque
-from typing import Optional, Dict, Union, List
+from typing import Dict, List
 
 # 3rd-party imports
 import numpy as np
@@ -17,10 +17,10 @@ from torch.utils.data import DataLoader, Subset
 
 # local imports
 from learned_simulator import LearnedSimulator
-from noise_utils import get_random_walk_noise_for_position_sequence
+from utils_noise import get_random_walk_noise_for_position_sequence
 from dataloader import OneStepDataset, RolloutDataset, one_step_collate
 from rollout import rollout
-from eval_utils import (
+from utils_eval import (
     compute_one_step_metrics,
     compute_mse_n,
     compute_mse_full,

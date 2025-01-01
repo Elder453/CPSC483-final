@@ -3,10 +3,11 @@ import pickle
 import os
 import numpy as np
 from torch.utils.data import Dataset
-from typing import Dict, List, Tuple, Optional, Union
+from typing import Dict, List, Tuple, Optional
 from dataclasses import dataclass
 
-INPUT_SEQUENCE_LENGTH = 6
+# local imports
+from utils import INPUT_SEQUENCE_LENGTH
 
 
 @dataclass
