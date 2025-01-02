@@ -5,11 +5,12 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem-per-cpu=15G
-#SBATCH --gpus=a100:1
+#SBATCH -C "a100|l40s"
+#SBATCH --gpus=1
 #SBATCH --mail-type=ALL
 #SBATCH --requeue
-#SBATCH --output=./slogs/2full_%j.out
-#SBATCH --error=./slogs/2full_%j.err
+#SBATCH --output=./slogs/full_%j.out
+#SBATCH --error=./slogs/full_%j.err
 
 module load miniconda
 
@@ -29,22 +30,28 @@ echo "Using Conda environment: $(conda info --envs | grep '*' | awk '{print $1}'
 echo "Current directory: $(pwd)"
 echo "======================================="
 
-DATASET="WaterDropSample"
+DATASET="WaterDrop"
 GNN_TYPE="interaction_net"
 LOSS_TYPE="one_step"
+CHECKPOINT=1
+SEED=42
 
 echo "Dataset: ${DATASET}"
 echo "GNN: ${GNN_TYPE}"
 echo "Loss: ${LOSS_TYPE}"
+echo "Checkpoint: ${CHECKPOINT}"
+echo "Seed: ${SEED}"
 
 python ./src/main.py \
     --mode=train \
     --dataset=$DATASET \
     --gnn_type=$GNN_TYPE \
     --loss_type=$LOSS_TYPE \
+    --checkpoint=$CHECKPOINT \
     --num_steps=500000 \
     --batch_size=2 \
-    --use_bn
+    --use_bn \
+    --seed=$SEED
 
 python ./src/main.py \
     --mode=eval \
@@ -52,7 +59,9 @@ python ./src/main.py \
     --gnn_type=$GNN_TYPE \
     --loss_type=$LOSS_TYPE \
     --eval_split=test \
-    --compute_all_metrics
+    --checkpoint=$CHECKPOINT \
+    --compute_all_metrics \
+    --seed=$SEED
 
 
 python ./src/main.py \
@@ -60,7 +69,9 @@ python ./src/main.py \
     --dataset=$DATASET \
     --gnn_type=$GNN_TYPE \
     --loss_type=$LOSS_TYPE \
-    --eval_split=test
+    --eval_split=test \
+    --checkpoint=$CHECKPOINT \
+    --seed=$SEED
 
 
 python ./src/render_rollout.py \
@@ -69,7 +80,8 @@ python ./src/render_rollout.py \
     --gnn_type=$GNN_TYPE \
     --loss_type=$LOSS_TYPE \
     --eval_split=test \
-    --step_stride=3
+    --step_stride=3 \
+    --seed=$SEED
 
 echo "======================================="
 echo "Job completed on $(hostname) at $(date)"

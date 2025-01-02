@@ -44,9 +44,6 @@ class GCN(nn.Module):
     def forward(self, data):
         x = data.graph['node_feat']
 
-        # gradient clipping
-        torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=1.0)
-
         x = self.convs[0](x, data.graph['edge_index'])
         x = self.activation(x)
         if self.use_bn:
@@ -130,9 +127,6 @@ class GAT(nn.Module):
     def forward(self, data):
         x = data.graph['node_feat']
         x = F.dropout(x, p=self.dropout, training=self.training)
-        
-        # add gradient clipping
-        torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=1.0)
         
         for i, conv in enumerate(self.convs[:-1]):
             x = conv(x, data.graph['edge_index'])

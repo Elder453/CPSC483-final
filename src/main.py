@@ -135,7 +135,7 @@ def eval(args: argparse.Namespace) -> None:
     checkpoint_path = f'{args.model_path}/{args.dataset}/{args.gnn_type}/{args.loss_type}'
     checkpoint_file = None
     for file in os.listdir(checkpoint_path):
-        if file.startswith('best'):
+        if file.startswith(f'best_val_mse_pos{args.checkpoint}'):
             checkpoint_file = os.path.join(checkpoint_path, file)
             break
     
@@ -283,7 +283,7 @@ def eval_rollout(args):
     file_name = None
 
     for file in files:
-        if file.startswith('best'):
+        if file.startswith(f'best_val_mse_pos{args.checkpoint}'):
             file_name = os.path.join(model_path, file)
             break
 
@@ -410,8 +410,8 @@ def train(args: argparse.Namespace) -> None:
 
     # checkpoint set up
     checkpoint_dir = f'{args.model_path}/{args.dataset}/{args.gnn_type}/{args.loss_type}'
-    latest_checkpoint_path = os.path.join(checkpoint_dir, 'latest_checkpoint.pt')
-    best_model_path = os.path.join(checkpoint_dir, 'best_val_mse_pos.pt')
+    latest_checkpoint_path = os.path.join(checkpoint_dir, f'latest_checkpoint{args.checkpoint}.pt')
+    best_model_path = os.path.join(checkpoint_dir, f'best_val_mse_pos{args.checkpoint}.pt')
 
     # helper function to save checkpoint
     def save_checkpoint(path):
@@ -708,18 +708,22 @@ def parse_arguments():
                               default="Water",
                               type=str,
                               help='Dataset directory.')
-    global_group.add_argument('--batch_size',
-                              default=2,
-                              type=int,
-                              help='Batch size for training and evaluation.')
     global_group.add_argument('--model_path',
                               default="models",
                               type=str,
-                              help='Path for saving/loading model checkpoints.')
+                              help='Top-level directory for saving models.')
+    global_group.add_argument('--checkpoint',
+                              default=2,
+                              type=int,
+                              help='Checkpoint ID to save/load model training.')
     global_group.add_argument('--gnn_type',
                               default='interaction_net',
                               choices=['interaction_net', 'gat', 'gcn'],
                               help='Type of GNN to use as processor.')
+    global_group.add_argument('--batch_size',
+                              default=2,
+                              type=int,
+                              help='Batch size for training and evaluation.')
     global_group.add_argument('--message_passing_steps',
                               default=10,
                               type=int,

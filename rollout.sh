@@ -3,6 +3,7 @@
 DATASET="WaterDropSample"
 GNN_TYPE="interaction_net"
 LOSS_TYPE="one_step"
+CHECKPOINT=1
 
 
 python ./src/main.py \
@@ -10,7 +11,8 @@ python ./src/main.py \
     --dataset=$DATASET \
     --gnn_type=$GNN_TYPE \
     --loss_type=$LOSS_TYPE \
-    --eval_split=test
+    --eval_split=test \
+    --checkpoint=$CHECKPOINT
 
 
 python ./src/render_rollout.py \

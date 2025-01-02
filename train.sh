@@ -4,6 +4,7 @@ python ./src/main.py \
     --dataset=WaterDropSample \
     --gnn_type=interaction_net \
     --loss_type=one_step \
+    --checkpoint=$CHECKPOINT \
     --num_steps=500000 \
     --batch_size=2 \
     --use_bn
