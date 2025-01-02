@@ -81,7 +81,6 @@ python ./src/render_rollout.py \
     --loss_type=$LOSS_TYPE \
     --eval_split=test \
     --step_stride=3 \
-    --seed=$SEED
 
 echo "======================================="
 echo "Job completed on $(hostname) at $(date)"
