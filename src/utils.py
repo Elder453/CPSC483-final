@@ -25,6 +25,7 @@ def get_cpu_count():
 INPUT_SEQUENCE_LENGTH = 6  # for calculating last 5 velocities
 NUM_PARTICLE_TYPES = 9
 KINEMATIC_PARTICLE_ID = 3
+STD_EPSILON = 1e-8
 NUM_WORKERS = get_cpu_count() - 1
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 

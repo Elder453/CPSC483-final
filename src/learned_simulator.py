@@ -7,10 +7,7 @@ import numpy as np
 from utils_connectivity import compute_connectivity_for_batch
 from dataloader import NCDataset
 from graph_network import EncodeProcessDecode
-from utils import INPUT_SEQUENCE_LENGTH
-
-# constants
-STD_EPSILON = 1e-8
+from utils import INPUT_SEQUENCE_LENGTH, STD_EPSILON
 
 
 class NormalizationStats(NamedTuple):

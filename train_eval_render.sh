@@ -1,8 +1,8 @@
 #!/bin/bash
 
-DATASET="Goop"
-GNN_TYPE="gat"
-LOSS_TYPE="multi_step"
+DATASET="WaterDropSample"
+GNN_TYPE="interaction_net"
+LOSS_TYPE="one_step"
 
 
 python ./src/main.py \
