@@ -4,7 +4,7 @@ This project provides an implementation for learning to simulate particle-based 
 
 ## Overview
 
-The system learns to simulate particle-based physics by using Graph Neural Networks (GNNs) to model particle interactions. It supports different types of simulations including water drops and water ramps.
+The system learns to simulate particle-based physics by using Graph Neural Networks (GNNs) to model particle interactions. It supports different types of simulations including water drops, sand dynamics, and goop behavior.
 
 ## Features
 
@@ -71,7 +71,7 @@ Within each `bash` script, there are various parameters that may be tuned or cus
 - `--mode`: Training or evaluation mode (`train`, `eval`, `eval_rollout`)
 - `--dataset`: Name of dataset to use
 - `--batch_size`: Number of samples per batch
-- `--num_epochs`: Number of training epochs
+- `--num_steps`: Number of training steps
 - `--message_passing_steps`: Number of GNN message passing steps
 - `--gnn_type`: Type of GNN to use (`interaction_net`, `gcn`, `gat`)
 - `--noise_std`: Standard deviation of noise injection
@@ -121,10 +121,9 @@ Within each `bash` script, there are various parameters that may be tuned or cus
 
 ## Acknowledgments
 
-This PyTorch implementation builds upon [Learn-to-Simulate](https://github.com/Emiyalzn/Learn-to-Simulate/tree/main), which translated the original TensorFlow codebase into PyTorch. We extend our gratitude to the authors for their foundational work.
-
 The original TensorFlow implementation was developed by [DeepMind](https://github.com/deepmind/deepmind-research) and published at ICML 2020. The research paper is titled “Learning to Simulate Complex Physics with Graph Networks” and can be accessed on [arXiv](https://arxiv.org/abs/2002.09405).
 
+This PyTorch implementation builds upon [Learn-to-Simulate](https://github.com/Emiyalzn/Learn-to-Simulate/tree/main), which translated the original TensorFlow codebase into PyTorch. We extend our gratitude to the authors for their foundational work.
 
 ```shell
 @article

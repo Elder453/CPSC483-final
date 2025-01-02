@@ -1,4 +1,4 @@
-name: learn-to-sim3
+name: learn-to-sim
 channels:
   - defaults
   - conda-forge
