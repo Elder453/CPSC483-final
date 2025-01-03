@@ -18,7 +18,8 @@ This repository provides a PyTorch-based framework for learning to simulate part
 5. [Usage](#usage)
    - [Training](#training)
    - [Evaluation](#evaluation)
-   - [Rollout Generation](#rollout-generation)
+   - [Rollout Generation](#rollout-trajectory-generation)
+   - [Train-Eval-Rollout](#train-eval-rollout)
 6. [Key Parameters](#key-parameters)
 7. [Directory Structure](#directory-structure)
 8. [Notes](#notes)
@@ -118,6 +119,14 @@ bash ./rollout.sh
 ```
 - Produces .pkl files capturing predicted rollouts. 
 - Then, renders them as GIF animations (like the one shown above) in `./rollouts`.
+
+### Train-Eval-Rollout
+
+Alternatively, to train a model, evaluate it on a held-out test set, and generate and animate the full trajectory:
+```bash
+bash ./train_eval_render.sh
+```
+- This is simply a concatenation of the aforementioned files!
 
 ## Key Parameters
 
