@@ -89,7 +89,7 @@ We provide shell scripts to automatically download datasets. For example, to dow
 ```bash
 bash ./download_dataset.sh WaterDropSample ./datasets
 ```
-This populates `./datasets/WaterDropSample` with `train/`, `valid`/`, and `test/` splits.
+This populates `./datasets/WaterDropSample` with `train/`, `valid`, and `test/` splits.
 
 
 ## Usage
