@@ -1,19 +1,64 @@
 # Learning to Simulate Physics
 
-This project provides an implementation for learning to simulate particle-based physics, adapted from [Learn-to-Simulate](https://github.com/Emiyalzn/Learn-to-Simulate/tree/main).
+<p align="center">
+  <img src="rollouts/WaterDropSample/interaction_net/one_step/ex0.gif" alt="Water Drop Sample" width="400">
+</p>
+<p align="center"><em>An example of water-drop particles simulated using an Interaction Network.</em></p>
+
+This repository provides a PyTorch-based framework for learning to simulate particle-based physics using Graph Neural Networks (GNNs). The approach draws inspiration from the seminal work, [Learning to Simulate Complex Physics with Graph Networks](https://arxiv.org/abs/2002.09405) (Sanchez-Gonzalez et al., ICML 2020) and builds upon the [Learn-to-Simulate](https://github.com/Emiyalzn/Learn-to-Simulate/tree/main) project.
+
+---
+
+## Table of Contents
+
+1. [Overview](#overview)
+2. [Key Features](#key-features)
+3. [Installation](#installation)
+4. [Dataset](#dataset)
+5. [Usage](#usage)
+   - [Training](#training)
+   - [Evaluation](#evaluation)
+   - [Rollout Generation](#rollout-generation)
+6. [Key Parameters](#key-parameters)
+7. [Directory Structure](#directory-structure)
+8. [Notes](#notes)
+9. [Acknowledgments](#acknowledgments)
+10. [Contact](#contact)
+
+---
 
 ## Overview
 
-The system learns to simulate particle-based physics by using Graph Neural Networks (GNNs) to model particle interactions. It supports different types of simulations including water drops, sand dynamics, and goop behavior.
+This project explores **particle-based physics** simulation using graph networks to learn how particles interact over time. Each particle is treated as a node in a graph, and edges represent local interactions (e.g., collisions, forces, or fluid interactions). By repeatedly applying a GNN “processor,” we can predict how a system evolves through time.
 
-## Features
+**Why Graph Networks?**  
+- Physics is often local and pairwise (e.g., collisions, springs, fluid or rigid interactions).  
+- GNNs excel at representing and learning from relational data structures.
 
-- Multiple GNN architectures (e.g. interaction networks and GAT)
-- Single-step and rollout predictions
-- Support for different particle types
-- Noise injection for robustness
-- Checkpoint saving and loading
-- Validation during training
+We support a variety of particle systems, including:
+- **Water drops**
+- **Sand dynamics**
+- **Goop behavior**
+
+---
+
+## Key Features
+
+- **Multiple GNN Architectures**  
+  Choose among **Interaction Networks**, **GAT (Graph Attention Networks)**, or **GCNs** for message passing.
+- **Single-Step and Rollout Predictions**  
+  - **Single-Step**: Predict the system state one timestep ahead.  
+  - **Rollout**: Recursively feed model outputs back as inputs to simulate for many timesteps.
+- **Support for Different Particle Types**  
+  Model mixtures of fluid, rigid, boundary, and other particle categories.
+- **Noise Injection for Robustness**  
+  Add noise to training data for better generalization.
+- **Checkpoint Saving and Loading**  
+  Automatic saving of “best” models based on validation metrics.
+- **Validation During Training**  
+  Monitor progress and stop early if there is no improvement.
+
+---
 
 ## Installation
 
@@ -38,10 +83,12 @@ mkdir -p ./rollouts
 
 ## Dataset
 
-1. Download a dataset (e.g., Water or WaterDropSample):
+We provide shell scripts to automatically download datasets. For example, to download a small “WaterDropSample” dataset:
 ```bash
 bash ./download_dataset.sh WaterDropSample ./datasets
 ```
+This populates `./datasets/WaterDropSample` with `train/`, `valid`/`, and `test/` splits.
+
 
 ## Usage
 
@@ -51,6 +98,8 @@ Train a model with default parameters:
 ```bash
 bash ./train.sh
 ```
+Inside the `train.sh` script, you can adjust arguments (e.g., `--dataset`, `--gnn_type`, `--num_steps`, etc.). By default, it trains an **interaction network** using a **one-step loss function**.
+
 
 ### Evaluation
 
@@ -58,15 +107,21 @@ Evaluate model predictions:
 ```bash
 bash ./eval.sh
 ```
+- Computes single-step metrics (position and acceleration MSE).
+- If enabled, computes full rollout metrics like multi-step MSE and Earth Mover’s Distance.
 
-Generate and animate trajectory rollouts:
+### Rollout (Trajectory) Generation
+
+Generate and animate full trajectory rollouts:
 ```bash
 bash ./rollout.sh
 ```
+- Produces .pkl files capturing predicted rollouts. 
+- Then, renders them as GIF animations (like the one shown above) in `./rollouts`.
 
 ## Key Parameters
 
-Within each `bash` script, there are various parameters that may be tuned or customized for usage. For convenience, we have provided a bash script for each of the core functionalities with default behavior; please modify those scripts directly or use the command line for customization deviating from the default behavior (`train.sh`, `eval.sh`, `rollout.sh`).
+Below are some commonly adjusted parameters:
 
 - `--mode`: Training or evaluation mode (`train`, `eval`, `eval_rollout`)
 - `--dataset`: Name of dataset to use
@@ -77,21 +132,27 @@ Within each `bash` script, there are various parameters that may be tuned or cus
 - `--noise_std`: Standard deviation of noise injection
 - `--lr`: Learning rate
 
+Additional parameters can be found in the `main.py` code or by reading the provided `train.sh`, `eval.sh`, and `rollout.sh` scripts.
+
 ## Directory Structure
 
+Below is a simplified directory layout:
 ```
 /CPSC483-final/
-├── datasets/           # Dataset storage
+├── datasets/                  # Dataset storage
 │   └── WaterDropSample/
 │       ├── train/
 │       ├── valid/
 │       └── test/
-├── models/             # Saved model checkpoints
+├── models/                    # Saved model checkpoints
 │   └── WaterDropSample/
-├── rollouts/           # Generated rollouts
+├── rollouts/                  # Generated rollouts and GIFs
 │   └── WaterDropSample/
-├── src/
-│   ├── main.py
+│       └── interaction_network/
+│           └── one_step/
+│               └── ex0.gif    # (Sample animation)
+├── src/                       # Source code
+│   ├── main.py                # Entry point (train/eval)
 │   ├── dataloader.py
 │   ├── graph_network.py
 │   ├── learned_simulator.py
@@ -114,16 +175,18 @@ Within each `bash` script, there are various parameters that may be tuned or cus
 
 ## Notes
 
-- The code assumes CUDA availability. For CPU-only usage, modify device settings and `environment.yml` accordingly.
+- The code assumes `CUDA 12.4` availability. For CPU-only usage, modify device settings and `environment.yml` accordingly.
 - Training time varies based on dataset size and computational resources.
 - Best validation checkpoints are automatically saved during training.
 - Parameters may need adjustment based on your specific use case.
 
 ## Acknowledgments
 
-The original TensorFlow implementation was developed by [DeepMind](https://github.com/deepmind/deepmind-research) and published at ICML 2020. The research paper is titled “Learning to Simulate Complex Physics with Graph Networks” and can be accessed on [arXiv](https://arxiv.org/abs/2002.09405).
+This implementation directly extends:
 
-This PyTorch implementation builds upon [Learn-to-Simulate](https://github.com/Emiyalzn/Learn-to-Simulate/tree/main), which translated the original TensorFlow codebase into PyTorch. We extend our gratitude to the authors for their foundational work.
+- DeepMind’s Original **TensorFlow** Code: [Learning to Simulate Complex Physics with Graph Networks](https://github.com/google-deepmind/deepmind-research/tree/master/learning_to_simulate)
+- **PyTorch** project by [Emiyalzn/Learn-to-Simulate](https://github.com/Emiyalzn/Learn-to-Simulate/tree/main)
+
 
 ```shell
 @article
@@ -146,3 +209,21 @@ This PyTorch implementation builds upon [Learn-to-Simulate](https://github.com/E
   bibsource = {dblp computer science bibliography, https://dblp.org}
 }
 ```
+
+We are grateful to the authors for open-sourcing their research and hope our research may be extended similarly!
+
+---
+
+## Contact
+
+For any questions, suggestions, or contributions, please reach out to:
+
+- **Elder Veliz**  
+  Email: [elder.veliz@yale.edu](mailto:elder.veliz@yale.edu)  
+  GitHub: [github.com/elder453](https://github.com/Elder453)
+
+- **Teo Dimov**  
+  Email: [teo.dimov@yale.edu](mailto:teo.dimov@yale.edu)  
+  GitHub: [github.com/teodimov](https://github.com/teodimov)
+
+Alternatively, you can open an issue on the [GitHub repository](https://github.com/Elder453/CPSC483-final) for any inquiries or to report bugs.

@@ -8,6 +8,14 @@ models/*
 rollouts/*
 slogs/*
 
+# WaterDropSample examples
+!models/WaterDropSample/interaction_net/one_step/ex.pl
+!models/WaterDropSample/interaction_net/one_step/ex.out
+!rollouts/WaterDropSample/interaction_net/one_step/ex0.pkl
+!rollouts/WaterDropSample/interaction_net/one_step/ex0.gif
+!rollouts/WaterDropSample/interaction_net/one_step/ex1.pkl
+!rollouts/WaterDropSample/interaction_net/one_step/ex1.gif
+
 # Local scripts
 combined_py_files.txt
 deprecated/
