@@ -72,6 +72,7 @@ cd CPSC483-final
 2. Install dependencies:
 ```bash
 conda env create -f environment.yml
+conda activate learn-to-sim
 ```
   **Note**: CUDA-specific versions of PyTorch and TensorFlow may need to be installed manually depending on your system’s GPU and CUDA version. Refer to the [PyTorch installation guide](https://pytorch.org/get-started/locally/) and [TensorFlow](https://www.tensorflow.org/install) installation guide for details.
 
