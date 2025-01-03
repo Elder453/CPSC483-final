@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=learn_sim_train_gpu
 #SBATCH --partition=scavenge_gpu
-#SBATCH --time=16:00:00
+#SBATCH --time=24:00:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem-per-cpu=15G
@@ -34,7 +34,7 @@ DATASET="WaterDrop"
 GNN_TYPE="interaction_net"
 LOSS_TYPE="one_step"
 CHECKPOINT=1
-SEED=42
+SEED=483
 
 echo "Dataset: ${DATASET}"
 echo "GNN: ${GNN_TYPE}"
