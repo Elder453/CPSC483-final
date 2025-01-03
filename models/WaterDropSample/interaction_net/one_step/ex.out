@@ -1,0 +1,602 @@
+(base) elderveliz@MWPC15XSG6 latest_download % bash ./train.sh
++-----------------------+-----------------+
+| Parameter             | Value           |
++=======================+=================+
+| Batch size            | 2               |
++-----------------------+-----------------+
+| Compute all metrics   | False           |
++-----------------------+-----------------+
+| Dataset               | WaterDropSample |
++-----------------------+-----------------+
+| Dropout               | 0.0             |
++-----------------------+-----------------+
+| Eval split            | test            |
++-----------------------+-----------------+
+| Gat heads             | 8               |
++-----------------------+-----------------+
+| Gnn type              | interaction_net |
++-----------------------+-----------------+
+| Hidden channels       | 32              |
++-----------------------+-----------------+
+| Loss type             | one_step        |
++-----------------------+-----------------+
+| Lr                    | 0.0001          |
++-----------------------+-----------------+
+| Message passing steps | 10              |
++-----------------------+-----------------+
+| Mode                  | train           |
++-----------------------+-----------------+
+| Model path            | models          |
++-----------------------+-----------------+
+| N rollout steps       | 1               |
++-----------------------+-----------------+
+| Noise std             | 0.0003          |
++-----------------------+-----------------+
+| Num gnn layers        | 2               |
++-----------------------+-----------------+
+| Num steps             | 500000          |
++-----------------------+-----------------+
+| Out heads             | 1               |
++-----------------------+-----------------+
+| Output path           | rollouts        |
++-----------------------+-----------------+
+| Seed                  | 483             |
++-----------------------+-----------------+
+| Use bn                | False           |
++-----------------------+-----------------+
+| Use residual          | False           |
++-----------------------+-----------------+
+| Weight decay          | 0               |
++-----------------------+-----------------+
+
+Training for 500000 steps
+995 steps per epoch
+Validating every 3000 steps
+Device: cpu
+
+Starting training...
+[00:00:00] Step: 0 | MSE-acc 1: 1.317e+00 | MSE-pos 1: 3.211e+01e-9 | LR: 0.000e+00
+[00:00:55] Step: 250 | MSE-acc 1: 1.170e+00 | MSE-pos 1: 4.300e+01e-9 | LR: 2.500e-06
+[00:01:48] Step: 500 | MSE-acc 1: 1.289e-01 | MSE-pos 1: 3.838e+00e-9 | LR: 5.000e-06
+[00:02:41] Step: 750 | MSE-acc 1: 1.492e-01 | MSE-pos 1: 6.344e+00e-9 | LR: 7.500e-06
+[00:03:34] Step: 1000 | MSE-acc 1: 1.136e-01 | MSE-pos 1: 4.924e+00e-9 | LR: 1.000e-05
+[00:04:30] Step: 1250 | MSE-acc 1: 7.047e-01 | MSE-pos 1: 4.875e+01e-9 | LR: 1.250e-05
+[00:05:21] Step: 1500 | MSE-acc 1: 3.869e-01 | MSE-pos 1: 2.027e+01e-9 | LR: 1.500e-05
+[00:06:16] Step: 1750 | MSE-acc 1: 1.792e-01 | MSE-pos 1: 9.385e+00e-9 | LR: 1.750e-05
+[00:07:15] Step: 2000 | MSE-acc 1: 1.107e-01 | MSE-pos 1: 6.194e+00e-9 | LR: 2.000e-05
+[00:08:10] Step: 2250 | MSE-acc 1: 1.580e-01 | MSE-pos 1: 8.169e+00e-9 | LR: 2.250e-05
+[00:09:04] Step: 2500 | MSE-acc 1: 1.975e-01 | MSE-pos 1: 7.220e+00e-9 | LR: 2.500e-05
+[00:09:59] Step: 2750 | MSE-acc 1: 1.825e-01 | MSE-pos 1: 8.378e+00e-9 | LR: 2.750e-05
+[00:10:53] Step: 3000 | MSE-acc 1: 1.017e-01 | MSE-pos 1: 5.641e+00e-9 | LR: 3.000e-05
+[00:12:41] Validation MSE-acc: 0.090 | MSE-pos: 8.62e-9
+                New best validation MSE-pos -> Saving model...
+[00:13:34] Step: 3250 | MSE-acc 1: 1.631e-01 | MSE-pos 1: 6.101e+00e-9 | LR: 3.250e-05
+[00:14:28] Step: 3500 | MSE-acc 1: 6.725e-02 | MSE-pos 1: 3.192e+00e-9 | LR: 3.500e-05
+[00:15:22] Step: 3750 | MSE-acc 1: 1.485e-01 | MSE-pos 1: 7.043e+00e-9 | LR: 3.750e-05
+[00:16:18] Step: 4000 | MSE-acc 1: 1.586e-01 | MSE-pos 1: 7.279e+00e-9 | LR: 4.000e-05
+[00:17:13] Step: 4250 | MSE-acc 1: 1.528e-01 | MSE-pos 1: 9.118e+00e-9 | LR: 4.250e-05
+[00:18:08] Step: 4500 | MSE-acc 1: 9.443e-02 | MSE-pos 1: 5.747e+00e-9 | LR: 4.500e-05
+[00:19:04] Step: 4750 | MSE-acc 1: 8.704e-02 | MSE-pos 1: 4.029e+00e-9 | LR: 4.750e-05
+[00:19:58] Step: 5000 | MSE-acc 1: 1.013e-01 | MSE-pos 1: 6.496e+00e-9 | LR: 5.000e-05
+[00:20:54] Step: 5250 | MSE-acc 1: 1.574e-01 | MSE-pos 1: 6.959e+00e-9 | LR: 5.250e-05
+[00:21:49] Step: 5500 | MSE-acc 1: 1.398e-01 | MSE-pos 1: 7.350e+00e-9 | LR: 5.500e-05
+[00:22:40] Step: 5750 | MSE-acc 1: 2.391e-01 | MSE-pos 1: 1.433e+01e-9 | LR: 5.750e-05
+[00:23:34] Step: 6000 | MSE-acc 1: 1.080e-01 | MSE-pos 1: 2.394e+00e-9 | LR: 6.000e-05
+[00:25:20] Validation MSE-acc: 0.046 | MSE-pos: 4.44e-9
+                New best validation MSE-pos -> Saving model...
+[00:26:14] Step: 6250 | MSE-acc 1: 1.506e-01 | MSE-pos 1: 8.281e+00e-9 | LR: 6.250e-05
+[00:27:09] Step: 6500 | MSE-acc 1: 1.613e-01 | MSE-pos 1: 9.551e+00e-9 | LR: 6.500e-05
+[00:28:07] Step: 6750 | MSE-acc 1: 7.895e-02 | MSE-pos 1: 2.999e+00e-9 | LR: 6.750e-05
+[00:29:03] Step: 7000 | MSE-acc 1: 1.387e-01 | MSE-pos 1: 7.291e+00e-9 | LR: 7.000e-05
+[00:29:59] Step: 7250 | MSE-acc 1: 1.367e-01 | MSE-pos 1: 5.234e+00e-9 | LR: 7.250e-05
+[00:30:52] Step: 7500 | MSE-acc 1: 1.346e-01 | MSE-pos 1: 4.315e+00e-9 | LR: 7.500e-05
+[00:31:48] Step: 7750 | MSE-acc 1: 9.000e-02 | MSE-pos 1: 3.734e+00e-9 | LR: 7.750e-05
+[00:32:42] Step: 8000 | MSE-acc 1: 4.735e-02 | MSE-pos 1: 1.815e+00e-9 | LR: 8.000e-05
+[00:33:38] Step: 8250 | MSE-acc 1: 1.328e-01 | MSE-pos 1: 4.741e+00e-9 | LR: 8.250e-05
+[00:34:39] Step: 8500 | MSE-acc 1: 1.071e-01 | MSE-pos 1: 2.838e+00e-9 | LR: 8.500e-05
+[00:35:42] Step: 8750 | MSE-acc 1: 6.980e-02 | MSE-pos 1: 3.412e+00e-9 | LR: 8.750e-05
+[00:36:40] Step: 9000 | MSE-acc 1: 8.372e-02 | MSE-pos 1: 3.024e+00e-9 | LR: 9.000e-05
+[00:38:55] Validation MSE-acc: 0.061 | MSE-pos: 5.79e-9
+                No improvement. Steps without improvement: 1/100
+[00:39:54] Step: 9250 | MSE-acc 1: 4.932e-02 | MSE-pos 1: 1.843e+00e-9 | LR: 9.250e-05
+[00:40:53] Step: 9500 | MSE-acc 1: 9.720e-02 | MSE-pos 1: 5.653e+00e-9 | LR: 9.500e-05
+[00:41:55] Step: 9750 | MSE-acc 1: 6.228e-02 | MSE-pos 1: 3.187e+00e-9 | LR: 9.750e-05
+[00:42:49] Step: 10000 | MSE-acc 1: 4.178e-02 | MSE-pos 1: 1.140e+00e-9 | LR: 1.000e-04
+[00:43:43] Step: 10250 | MSE-acc 1: 7.815e-02 | MSE-pos 1: 4.169e+00e-9 | LR: 9.970e-05
+[00:44:38] Step: 10500 | MSE-acc 1: 2.051e-01 | MSE-pos 1: 1.241e+01e-9 | LR: 9.940e-05
+[00:45:34] Step: 10750 | MSE-acc 1: 7.778e-02 | MSE-pos 1: 4.209e+00e-9 | LR: 9.910e-05
+[00:46:29] Step: 11000 | MSE-acc 1: 1.047e-01 | MSE-pos 1: 4.291e+00e-9 | LR: 9.881e-05
+[00:47:25] Step: 11250 | MSE-acc 1: 1.488e-01 | MSE-pos 1: 7.335e+00e-9 | LR: 9.851e-05
+[00:48:20] Step: 11500 | MSE-acc 1: 3.229e-01 | MSE-pos 1: 1.937e+01e-9 | LR: 9.822e-05
+[00:49:18] Step: 11750 | MSE-acc 1: 1.546e-01 | MSE-pos 1: 1.075e+01e-9 | LR: 9.792e-05
+[00:50:14] Step: 12000 | MSE-acc 1: 3.469e-02 | MSE-pos 1: 1.352e+00e-9 | LR: 9.763e-05
+[00:52:06] Validation MSE-acc: 0.059 | MSE-pos: 5.68e-9
+                No improvement. Steps without improvement: 2/100
+[00:53:01] Step: 12250 | MSE-acc 1: 7.039e-02 | MSE-pos 1: 2.768e+00e-9 | LR: 9.734e-05
+[00:54:00] Step: 12500 | MSE-acc 1: 1.253e-01 | MSE-pos 1: 7.638e+00e-9 | LR: 9.705e-05
+[00:54:58] Step: 12750 | MSE-acc 1: 9.646e-02 | MSE-pos 1: 5.801e+00e-9 | LR: 9.676e-05
+[00:55:55] Step: 13000 | MSE-acc 1: 1.344e-01 | MSE-pos 1: 6.936e+00e-9 | LR: 9.647e-05
+[00:56:52] Step: 13250 | MSE-acc 1: 6.915e-02 | MSE-pos 1: 3.368e+00e-9 | LR: 9.618e-05
+[00:57:49] Step: 13500 | MSE-acc 1: 5.111e-02 | MSE-pos 1: 1.378e+00e-9 | LR: 9.589e-05
+[00:58:46] Step: 13750 | MSE-acc 1: 6.152e-02 | MSE-pos 1: 3.653e+00e-9 | LR: 9.560e-05
+[00:59:45] Step: 14000 | MSE-acc 1: 4.575e-02 | MSE-pos 1: 2.383e+00e-9 | LR: 9.532e-05
+[01:00:42] Step: 14250 | MSE-acc 1: 6.117e-02 | MSE-pos 1: 2.669e+00e-9 | LR: 9.503e-05
+[01:01:39] Step: 14500 | MSE-acc 1: 4.311e-02 | MSE-pos 1: 1.601e+00e-9 | LR: 9.475e-05
+[01:02:36] Step: 14750 | MSE-acc 1: 3.529e-02 | MSE-pos 1: 1.777e+00e-9 | LR: 9.446e-05
+[01:03:36] Step: 15000 | MSE-acc 1: 4.720e-02 | MSE-pos 1: 1.887e+00e-9 | LR: 9.418e-05
+[01:05:30] Validation MSE-acc: 0.049 | MSE-pos: 4.71e-9
+                No improvement. Steps without improvement: 3/100
+[01:06:28] Step: 15250 | MSE-acc 1: 5.318e-02 | MSE-pos 1: 2.379e+00e-9 | LR: 9.390e-05
+[01:07:24] Step: 15500 | MSE-acc 1: 3.214e-02 | MSE-pos 1: 9.815e-01e-9 | LR: 9.362e-05
+[01:08:22] Step: 15750 | MSE-acc 1: 5.890e-02 | MSE-pos 1: 2.603e+00e-9 | LR: 9.334e-05
+[01:09:19] Step: 16000 | MSE-acc 1: 3.501e-02 | MSE-pos 1: 1.739e+00e-9 | LR: 9.306e-05
+[01:10:17] Step: 16250 | MSE-acc 1: 8.977e-02 | MSE-pos 1: 5.133e+00e-9 | LR: 9.278e-05
+[01:11:13] Step: 16500 | MSE-acc 1: 1.411e+00 | MSE-pos 1: 1.176e+02e-9 | LR: 9.250e-05
+[01:12:10] Step: 16750 | MSE-acc 1: 4.972e-02 | MSE-pos 1: 2.618e+00e-9 | LR: 9.222e-05
+[01:13:09] Step: 17000 | MSE-acc 1: 7.961e-02 | MSE-pos 1: 4.187e+00e-9 | LR: 9.195e-05
+[01:14:07] Step: 17250 | MSE-acc 1: 2.912e-02 | MSE-pos 1: 1.184e+00e-9 | LR: 9.167e-05
+[01:15:04] Step: 17500 | MSE-acc 1: 1.253e-01 | MSE-pos 1: 6.106e+00e-9 | LR: 9.140e-05
+[01:16:01] Step: 17750 | MSE-acc 1: 5.583e-02 | MSE-pos 1: 2.666e+00e-9 | LR: 9.113e-05
+[01:17:03] Step: 18000 | MSE-acc 1: 4.645e-01 | MSE-pos 1: 3.266e+01e-9 | LR: 9.085e-05
+[01:19:05] Validation MSE-acc: 0.041 | MSE-pos: 3.92e-9
+                New best validation MSE-pos -> Saving model...
+[01:20:09] Step: 18250 | MSE-acc 1: 6.868e-02 | MSE-pos 1: 3.900e+00e-9 | LR: 9.058e-05
+[01:21:06] Step: 18500 | MSE-acc 1: 2.678e-02 | MSE-pos 1: 1.065e+00e-9 | LR: 9.031e-05
+[01:22:03] Step: 18750 | MSE-acc 1: 3.723e-02 | MSE-pos 1: 1.862e+00e-9 | LR: 9.004e-05
+[01:23:00] Step: 19000 | MSE-acc 1: 2.379e-02 | MSE-pos 1: 9.573e-01e-9 | LR: 8.977e-05
+[01:23:58] Step: 19250 | MSE-acc 1: 4.995e-02 | MSE-pos 1: 3.104e+00e-9 | LR: 8.950e-05
+[01:24:56] Step: 19500 | MSE-acc 1: 9.816e-02 | MSE-pos 1: 5.214e+00e-9 | LR: 8.923e-05
+[01:25:54] Step: 19750 | MSE-acc 1: 1.344e-01 | MSE-pos 1: 9.617e+00e-9 | LR: 8.897e-05
+[01:26:52] Step: 20000 | MSE-acc 1: 1.628e-01 | MSE-pos 1: 6.607e+00e-9 | LR: 8.870e-05
+[01:27:50] Step: 20250 | MSE-acc 1: 8.324e-02 | MSE-pos 1: 3.843e+00e-9 | LR: 8.844e-05
+[01:28:49] Step: 20500 | MSE-acc 1: 7.501e-02 | MSE-pos 1: 2.956e+00e-9 | LR: 8.817e-05
+[01:29:48] Step: 20750 | MSE-acc 1: 8.224e-02 | MSE-pos 1: 5.347e+00e-9 | LR: 8.791e-05
+[01:30:45] Step: 21000 | MSE-acc 1: 6.000e-02 | MSE-pos 1: 2.700e+00e-9 | LR: 8.764e-05
+[01:32:24] Validation MSE-acc: 0.038 | MSE-pos: 3.65e-9
+                New best validation MSE-pos -> Saving model...
+[01:33:22] Step: 21250 | MSE-acc 1: 1.244e-01 | MSE-pos 1: 8.865e+00e-9 | LR: 8.738e-05
+[01:34:21] Step: 21500 | MSE-acc 1: 1.131e-01 | MSE-pos 1: 7.052e+00e-9 | LR: 8.712e-05
+[01:35:20] Step: 21750 | MSE-acc 1: 1.113e-01 | MSE-pos 1: 9.211e+00e-9 | LR: 8.686e-05
+[01:36:19] Step: 22000 | MSE-acc 1: 5.289e-02 | MSE-pos 1: 1.869e+00e-9 | LR: 8.660e-05
+[01:37:18] Step: 22250 | MSE-acc 1: 9.422e-02 | MSE-pos 1: 5.271e+00e-9 | LR: 8.634e-05
+[01:38:16] Step: 22500 | MSE-acc 1: 1.001e-01 | MSE-pos 1: 4.824e+00e-9 | LR: 8.608e-05
+[01:39:15] Step: 22750 | MSE-acc 1: 3.333e-02 | MSE-pos 1: 1.822e+00e-9 | LR: 8.583e-05
+[01:40:14] Step: 23000 | MSE-acc 1: 2.385e-02 | MSE-pos 1: 7.952e-01e-9 | LR: 8.557e-05
+[01:41:12] Step: 23250 | MSE-acc 1: 1.231e-01 | MSE-pos 1: 5.631e+00e-9 | LR: 8.531e-05
+[01:42:14] Step: 23500 | MSE-acc 1: 4.657e-02 | MSE-pos 1: 1.374e+00e-9 | LR: 8.506e-05
+[01:43:12] Step: 23750 | MSE-acc 1: 6.118e-02 | MSE-pos 1: 3.564e+00e-9 | LR: 8.480e-05
+[01:44:13] Step: 24000 | MSE-acc 1: 9.713e-02 | MSE-pos 1: 6.189e+00e-9 | LR: 8.455e-05
+[01:46:16] Validation MSE-acc: 0.036 | MSE-pos: 3.45e-9
+                New best validation MSE-pos -> Saving model...
+[01:47:15] Step: 24250 | MSE-acc 1: 6.009e-02 | MSE-pos 1: 3.745e+00e-9 | LR: 8.430e-05
+[01:48:15] Step: 24500 | MSE-acc 1: 4.840e-02 | MSE-pos 1: 2.604e+00e-9 | LR: 8.405e-05
+[01:49:14] Step: 24750 | MSE-acc 1: 1.106e-01 | MSE-pos 1: 5.178e+00e-9 | LR: 8.379e-05
+[01:50:11] Step: 25000 | MSE-acc 1: 1.271e-01 | MSE-pos 1: 7.825e+00e-9 | LR: 8.354e-05
+[01:51:10] Step: 25250 | MSE-acc 1: 5.564e-02 | MSE-pos 1: 2.613e+00e-9 | LR: 8.329e-05
+[01:52:08] Step: 25500 | MSE-acc 1: 7.371e-02 | MSE-pos 1: 3.816e+00e-9 | LR: 8.305e-05
+[01:53:05] Step: 25750 | MSE-acc 1: 8.450e-02 | MSE-pos 1: 5.650e+00e-9 | LR: 8.280e-05
+[01:54:02] Step: 26000 | MSE-acc 1: 5.054e-02 | MSE-pos 1: 2.113e+00e-9 | LR: 8.255e-05
+[01:55:00] Step: 26250 | MSE-acc 1: 2.511e-01 | MSE-pos 1: 2.079e+01e-9 | LR: 8.230e-05
+[01:55:58] Step: 26500 | MSE-acc 1: 3.361e-02 | MSE-pos 1: 1.430e+00e-9 | LR: 8.206e-05
+[01:56:56] Step: 26750 | MSE-acc 1: 1.047e-01 | MSE-pos 1: 7.211e+00e-9 | LR: 8.181e-05
+[01:57:53] Step: 27000 | MSE-acc 1: 5.225e-02 | MSE-pos 1: 1.981e+00e-9 | LR: 8.157e-05
+[01:59:52] Validation MSE-acc: 0.032 | MSE-pos: 3.05e-9
+                New best validation MSE-pos -> Saving model...
+[02:00:52] Step: 27250 | MSE-acc 1: 3.078e-02 | MSE-pos 1: 1.610e+00e-9 | LR: 8.132e-05
+[02:01:52] Step: 27500 | MSE-acc 1: 2.839e-02 | MSE-pos 1: 1.249e+00e-9 | LR: 8.108e-05
+[02:02:50] Step: 27750 | MSE-acc 1: 1.558e-01 | MSE-pos 1: 9.577e+00e-9 | LR: 8.084e-05
+[02:03:48] Step: 28000 | MSE-acc 1: 4.448e-02 | MSE-pos 1: 2.199e+00e-9 | LR: 8.060e-05
+[02:04:47] Step: 28250 | MSE-acc 1: 1.753e-02 | MSE-pos 1: 7.519e-01e-9 | LR: 8.036e-05
+[02:05:45] Step: 28500 | MSE-acc 1: 7.075e-02 | MSE-pos 1: 3.020e+00e-9 | LR: 8.012e-05
+[02:06:42] Step: 28750 | MSE-acc 1: 4.000e-02 | MSE-pos 1: 1.901e+00e-9 | LR: 7.988e-05
+[02:07:40] Step: 29000 | MSE-acc 1: 2.361e-02 | MSE-pos 1: 1.133e+00e-9 | LR: 7.964e-05
+[02:08:37] Step: 29250 | MSE-acc 1: 1.698e-01 | MSE-pos 1: 8.377e+00e-9 | LR: 7.940e-05
+[02:09:34] Step: 29500 | MSE-acc 1: 4.848e-02 | MSE-pos 1: 2.913e+00e-9 | LR: 7.916e-05
+[02:10:33] Step: 29750 | MSE-acc 1: 1.098e-01 | MSE-pos 1: 7.944e+00e-9 | LR: 7.893e-05
+[02:11:31] Step: 30000 | MSE-acc 1: 5.161e-02 | MSE-pos 1: 3.356e+00e-9 | LR: 7.869e-05
+[02:13:19] Validation MSE-acc: 0.050 | MSE-pos: 4.77e-9
+                No improvement. Steps without improvement: 1/100
+[02:14:15] Step: 30250 | MSE-acc 1: 8.564e-02 | MSE-pos 1: 5.127e+00e-9 | LR: 7.846e-05
+[02:15:12] Step: 30500 | MSE-acc 1: 4.782e-02 | MSE-pos 1: 1.971e+00e-9 | LR: 7.822e-05
+[02:16:10] Step: 30750 | MSE-acc 1: 1.964e-02 | MSE-pos 1: 8.704e-01e-9 | LR: 7.799e-05
+[02:17:07] Step: 31000 | MSE-acc 1: 2.573e-02 | MSE-pos 1: 1.098e+00e-9 | LR: 7.776e-05
+[02:18:04] Step: 31250 | MSE-acc 1: 6.579e-02 | MSE-pos 1: 3.153e+00e-9 | LR: 7.752e-05
+[02:19:01] Step: 31500 | MSE-acc 1: 1.594e-01 | MSE-pos 1: 8.520e+00e-9 | LR: 7.729e-05
+[02:19:58] Step: 31750 | MSE-acc 1: 8.314e-02 | MSE-pos 1: 4.826e+00e-9 | LR: 7.706e-05
+[02:20:57] Step: 32000 | MSE-acc 1: 5.444e-02 | MSE-pos 1: 2.278e+00e-9 | LR: 7.683e-05
+[02:21:57] Step: 32250 | MSE-acc 1: 1.873e-02 | MSE-pos 1: 7.877e-01e-9 | LR: 7.660e-05
+[02:22:54] Step: 32500 | MSE-acc 1: 4.848e-02 | MSE-pos 1: 2.079e+00e-9 | LR: 7.637e-05
+[02:23:51] Step: 32750 | MSE-acc 1: 9.158e-02 | MSE-pos 1: 5.566e+00e-9 | LR: 7.614e-05
+[02:24:50] Step: 33000 | MSE-acc 1: 6.177e-02 | MSE-pos 1: 3.613e+00e-9 | LR: 7.592e-05
+[02:26:47] Validation MSE-acc: 0.041 | MSE-pos: 3.93e-9
+                No improvement. Steps without improvement: 2/100
+[02:27:45] Step: 33250 | MSE-acc 1: 5.308e-02 | MSE-pos 1: 2.404e+00e-9 | LR: 7.569e-05
+[02:28:42] Step: 33500 | MSE-acc 1: 6.414e-02 | MSE-pos 1: 2.890e+00e-9 | LR: 7.546e-05
+[02:29:40] Step: 33750 | MSE-acc 1: 8.612e-02 | MSE-pos 1: 4.183e+00e-9 | LR: 7.524e-05
+[02:30:37] Step: 34000 | MSE-acc 1: 5.015e-02 | MSE-pos 1: 1.342e+00e-9 | LR: 7.501e-05
+[02:31:33] Step: 34250 | MSE-acc 1: 3.503e-02 | MSE-pos 1: 1.249e+00e-9 | LR: 7.479e-05
+[02:32:31] Step: 34500 | MSE-acc 1: 6.874e-02 | MSE-pos 1: 2.791e+00e-9 | LR: 7.457e-05
+[02:33:30] Step: 34750 | MSE-acc 1: 5.740e-02 | MSE-pos 1: 2.210e+00e-9 | LR: 7.435e-05
+[02:34:29] Step: 35000 | MSE-acc 1: 2.006e-02 | MSE-pos 1: 6.430e-01e-9 | LR: 7.412e-05
+[02:35:27] Step: 35250 | MSE-acc 1: 4.666e-02 | MSE-pos 1: 3.004e+00e-9 | LR: 7.390e-05
+[02:36:25] Step: 35500 | MSE-acc 1: 6.393e-02 | MSE-pos 1: 4.158e+00e-9 | LR: 7.368e-05
+[02:37:22] Step: 35750 | MSE-acc 1: 1.273e-01 | MSE-pos 1: 7.979e+00e-9 | LR: 7.346e-05
+[02:38:18] Step: 36000 | MSE-acc 1: 7.397e-02 | MSE-pos 1: 4.454e+00e-9 | LR: 7.324e-05
+[02:40:10] Validation MSE-acc: 0.031 | MSE-pos: 2.98e-9
+                New best validation MSE-pos -> Saving model...
+[02:41:08] Step: 36250 | MSE-acc 1: 8.502e-02 | MSE-pos 1: 6.768e+00e-9 | LR: 7.302e-05
+[02:42:05] Step: 36500 | MSE-acc 1: 9.120e-02 | MSE-pos 1: 4.555e+00e-9 | LR: 7.281e-05
+[02:43:02] Step: 36750 | MSE-acc 1: 2.538e-02 | MSE-pos 1: 1.846e+00e-9 | LR: 7.259e-05
+[02:44:00] Step: 37000 | MSE-acc 1: 2.388e-02 | MSE-pos 1: 1.225e+00e-9 | LR: 7.237e-05
+[02:45:00] Step: 37250 | MSE-acc 1: 2.944e-02 | MSE-pos 1: 9.490e-01e-9 | LR: 7.216e-05
+[02:45:58] Step: 37500 | MSE-acc 1: 5.620e-02 | MSE-pos 1: 3.332e+00e-9 | LR: 7.194e-05
+[02:46:55] Step: 37750 | MSE-acc 1: 1.110e-01 | MSE-pos 1: 5.458e+00e-9 | LR: 7.173e-05
+[02:47:54] Step: 38000 | MSE-acc 1: 1.602e-01 | MSE-pos 1: 9.839e+00e-9 | LR: 7.151e-05
+[02:48:50] Step: 38250 | MSE-acc 1: 9.703e-02 | MSE-pos 1: 5.975e+00e-9 | LR: 7.130e-05
+[02:49:48] Step: 38500 | MSE-acc 1: 7.716e-02 | MSE-pos 1: 4.548e+00e-9 | LR: 7.109e-05
+[02:50:46] Step: 38750 | MSE-acc 1: 3.550e-02 | MSE-pos 1: 1.736e+00e-9 | LR: 7.087e-05
+[02:51:42] Step: 39000 | MSE-acc 1: 6.402e-02 | MSE-pos 1: 3.446e+00e-9 | LR: 7.066e-05
+[02:53:28] Validation MSE-acc: 0.037 | MSE-pos: 3.50e-9
+                No improvement. Steps without improvement: 1/100
+[02:54:26] Step: 39250 | MSE-acc 1: 4.237e-02 | MSE-pos 1: 2.485e+00e-9 | LR: 7.045e-05
+[02:55:24] Step: 39500 | MSE-acc 1: 5.250e-02 | MSE-pos 1: 2.905e+00e-9 | LR: 7.024e-05
+[02:56:20] Step: 39750 | MSE-acc 1: 1.712e-02 | MSE-pos 1: 7.910e-01e-9 | LR: 7.003e-05
+[02:57:17] Step: 40000 | MSE-acc 1: 5.158e-02 | MSE-pos 1: 3.303e+00e-9 | LR: 6.982e-05
+[02:58:15] Step: 40250 | MSE-acc 1: 2.360e-02 | MSE-pos 1: 6.958e-01e-9 | LR: 6.962e-05
+[02:59:12] Step: 40500 | MSE-acc 1: 2.609e-02 | MSE-pos 1: 1.411e+00e-9 | LR: 6.941e-05
+[03:00:09] Step: 40750 | MSE-acc 1: 7.743e-02 | MSE-pos 1: 3.526e+00e-9 | LR: 6.920e-05
+[03:01:06] Step: 41000 | MSE-acc 1: 6.488e-02 | MSE-pos 1: 4.202e+00e-9 | LR: 6.900e-05
+[03:02:04] Step: 41250 | MSE-acc 1: 3.179e-02 | MSE-pos 1: 1.741e+00e-9 | LR: 6.879e-05
+[03:03:01] Step: 41500 | MSE-acc 1: 8.830e-02 | MSE-pos 1: 3.654e+00e-9 | LR: 6.858e-05
+[03:03:59] Step: 41750 | MSE-acc 1: 1.170e-01 | MSE-pos 1: 7.342e+00e-9 | LR: 6.838e-05
+[03:04:59] Step: 42000 | MSE-acc 1: 6.144e-02 | MSE-pos 1: 2.937e+00e-9 | LR: 6.818e-05
+[03:07:07] Validation MSE-acc: 0.033 | MSE-pos: 3.20e-9
+                No improvement. Steps without improvement: 2/100
+[03:08:03] Step: 42250 | MSE-acc 1: 5.275e-02 | MSE-pos 1: 1.701e+00e-9 | LR: 6.797e-05
+[03:09:02] Step: 42500 | MSE-acc 1: 5.787e-02 | MSE-pos 1: 2.691e+00e-9 | LR: 6.777e-05
+[03:10:00] Step: 42750 | MSE-acc 1: 5.143e-02 | MSE-pos 1: 2.358e+00e-9 | LR: 6.757e-05
+[03:10:58] Step: 43000 | MSE-acc 1: 2.837e-02 | MSE-pos 1: 1.697e+00e-9 | LR: 6.737e-05
+[03:11:57] Step: 43250 | MSE-acc 1: 2.643e-02 | MSE-pos 1: 1.239e+00e-9 | LR: 6.717e-05
+[03:12:55] Step: 43500 | MSE-acc 1: 7.815e-02 | MSE-pos 1: 4.286e+00e-9 | LR: 6.697e-05
+[03:13:52] Step: 43750 | MSE-acc 1: 1.633e-02 | MSE-pos 1: 1.286e+00e-9 | LR: 6.677e-05
+[03:14:50] Step: 44000 | MSE-acc 1: 5.521e-02 | MSE-pos 1: 4.320e+00e-9 | LR: 6.657e-05
+[03:15:48] Step: 44250 | MSE-acc 1: 2.430e-02 | MSE-pos 1: 1.558e+00e-9 | LR: 6.637e-05
+[03:16:48] Step: 44500 | MSE-acc 1: 3.501e-02 | MSE-pos 1: 1.788e+00e-9 | LR: 6.617e-05
+[03:17:49] Step: 44750 | MSE-acc 1: 5.066e-02 | MSE-pos 1: 2.334e+00e-9 | LR: 6.597e-05
+[03:18:46] Step: 45000 | MSE-acc 1: 2.009e-02 | MSE-pos 1: 8.048e-01e-9 | LR: 6.578e-05
+[03:20:31] Validation MSE-acc: 0.031 | MSE-pos: 3.00e-9
+                No improvement. Steps without improvement: 3/100
+[03:21:29] Step: 45250 | MSE-acc 1: 9.838e-02 | MSE-pos 1: 7.204e+00e-9 | LR: 6.558e-05
+[03:22:25] Step: 45500 | MSE-acc 1: 3.361e-02 | MSE-pos 1: 2.459e+00e-9 | LR: 6.539e-05
+[03:23:23] Step: 45750 | MSE-acc 1: 2.470e-02 | MSE-pos 1: 1.227e+00e-9 | LR: 6.519e-05
+[03:24:20] Step: 46000 | MSE-acc 1: 6.037e-02 | MSE-pos 1: 3.691e+00e-9 | LR: 6.500e-05
+[03:25:19] Step: 46250 | MSE-acc 1: 1.177e-01 | MSE-pos 1: 9.267e+00e-9 | LR: 6.480e-05
+[03:26:17] Step: 46500 | MSE-acc 1: 4.945e-02 | MSE-pos 1: 3.585e+00e-9 | LR: 6.461e-05
+[03:27:15] Step: 46750 | MSE-acc 1: 3.671e-02 | MSE-pos 1: 1.107e+00e-9 | LR: 6.442e-05
+[03:28:12] Step: 47000 | MSE-acc 1: 1.347e-01 | MSE-pos 1: 1.270e+01e-9 | LR: 6.423e-05
+[03:29:10] Step: 47250 | MSE-acc 1: 4.161e-02 | MSE-pos 1: 1.426e+00e-9 | LR: 6.404e-05
+[03:30:07] Step: 47500 | MSE-acc 1: 4.940e-02 | MSE-pos 1: 2.305e+00e-9 | LR: 6.384e-05
+[03:31:04] Step: 47750 | MSE-acc 1: 5.512e-02 | MSE-pos 1: 2.442e+00e-9 | LR: 6.365e-05
+[03:32:02] Step: 48000 | MSE-acc 1: 3.761e-02 | MSE-pos 1: 1.643e+00e-9 | LR: 6.346e-05
+[03:34:02] Validation MSE-acc: 0.031 | MSE-pos: 2.95e-9
+                New best validation MSE-pos -> Saving model...
+[03:35:00] Step: 48250 | MSE-acc 1: 1.526e-01 | MSE-pos 1: 9.982e+00e-9 | LR: 6.328e-05
+[03:35:57] Step: 48500 | MSE-acc 1: 5.054e-02 | MSE-pos 1: 2.410e+00e-9 | LR: 6.309e-05
+[03:36:51] Step: 48750 | MSE-acc 1: 1.143e-01 | MSE-pos 1: 7.436e+00e-9 | LR: 6.290e-05
+[03:37:46] Step: 49000 | MSE-acc 1: 3.795e-02 | MSE-pos 1: 1.901e+00e-9 | LR: 6.271e-05
+[03:38:44] Step: 49250 | MSE-acc 1: 1.662e-01 | MSE-pos 1: 7.931e+00e-9 | LR: 6.253e-05
+[03:39:39] Step: 49500 | MSE-acc 1: 2.981e-02 | MSE-pos 1: 1.093e+00e-9 | LR: 6.234e-05
+[03:40:35] Step: 49750 | MSE-acc 1: 1.151e-01 | MSE-pos 1: 6.537e+00e-9 | LR: 6.215e-05
+[03:41:31] Step: 50000 | MSE-acc 1: 4.555e-02 | MSE-pos 1: 3.377e+00e-9 | LR: 6.197e-05
+[03:42:26] Step: 50250 | MSE-acc 1: 5.219e-02 | MSE-pos 1: 3.207e+00e-9 | LR: 6.178e-05
+[03:43:21] Step: 50500 | MSE-acc 1: 4.088e-02 | MSE-pos 1: 2.236e+00e-9 | LR: 6.160e-05
+[03:44:18] Step: 50750 | MSE-acc 1: 5.110e-02 | MSE-pos 1: 2.294e+00e-9 | LR: 6.142e-05
+[03:45:15] Step: 51000 | MSE-acc 1: 6.478e-02 | MSE-pos 1: 3.113e+00e-9 | LR: 6.123e-05
+[03:47:10] Validation MSE-acc: 0.034 | MSE-pos: 3.22e-9
+                No improvement. Steps without improvement: 1/100
+[03:48:08] Step: 51250 | MSE-acc 1: 8.351e-02 | MSE-pos 1: 5.242e+00e-9 | LR: 6.105e-05
+[03:49:10] Step: 51500 | MSE-acc 1: 2.035e-02 | MSE-pos 1: 1.339e+00e-9 | LR: 6.087e-05
+[03:50:08] Step: 51750 | MSE-acc 1: 8.249e-02 | MSE-pos 1: 4.123e+00e-9 | LR: 6.069e-05
+[03:51:05] Step: 52000 | MSE-acc 1: 4.948e-02 | MSE-pos 1: 3.903e+00e-9 | LR: 6.051e-05
+[03:52:04] Step: 52250 | MSE-acc 1: 5.038e-02 | MSE-pos 1: 2.681e+00e-9 | LR: 6.033e-05
+[03:53:02] Step: 52500 | MSE-acc 1: 4.769e-02 | MSE-pos 1: 3.070e+00e-9 | LR: 6.015e-05
+[03:53:59] Step: 52750 | MSE-acc 1: 5.773e-02 | MSE-pos 1: 3.646e+00e-9 | LR: 5.997e-05
+[03:54:55] Step: 53000 | MSE-acc 1: 5.133e-02 | MSE-pos 1: 1.725e+00e-9 | LR: 5.979e-05
+[03:55:55] Step: 53250 | MSE-acc 1: 2.061e-01 | MSE-pos 1: 1.463e+01e-9 | LR: 5.961e-05
+[03:56:55] Step: 53500 | MSE-acc 1: 6.183e-02 | MSE-pos 1: 3.424e+00e-9 | LR: 5.944e-05
+[03:57:52] Step: 53750 | MSE-acc 1: 4.704e-02 | MSE-pos 1: 3.697e+00e-9 | LR: 5.926e-05
+[03:58:49] Step: 54000 | MSE-acc 1: 2.626e-02 | MSE-pos 1: 1.235e+00e-9 | LR: 5.908e-05
+[04:00:45] Validation MSE-acc: 0.035 | MSE-pos: 3.34e-9
+                No improvement. Steps without improvement: 2/100
+[04:01:41] Step: 54250 | MSE-acc 1: 2.794e-02 | MSE-pos 1: 9.303e-01e-9 | LR: 5.891e-05
+[04:02:39] Step: 54500 | MSE-acc 1: 5.125e-02 | MSE-pos 1: 2.140e+00e-9 | LR: 5.873e-05
+[04:03:36] Step: 54750 | MSE-acc 1: 8.252e-02 | MSE-pos 1: 5.945e+00e-9 | LR: 5.856e-05
+[04:04:34] Step: 55000 | MSE-acc 1: 1.260e-01 | MSE-pos 1: 7.163e+00e-9 | LR: 5.838e-05
+[04:05:34] Step: 55250 | MSE-acc 1: 5.118e-02 | MSE-pos 1: 2.558e+00e-9 | LR: 5.821e-05
+[04:06:31] Step: 55500 | MSE-acc 1: 2.322e-02 | MSE-pos 1: 1.177e+00e-9 | LR: 5.804e-05
+[04:07:28] Step: 55750 | MSE-acc 1: 5.590e-02 | MSE-pos 1: 2.467e+00e-9 | LR: 5.787e-05
+[04:08:25] Step: 56000 | MSE-acc 1: 6.743e-02 | MSE-pos 1: 3.902e+00e-9 | LR: 5.769e-05
+[04:09:23] Step: 56250 | MSE-acc 1: 4.016e-02 | MSE-pos 1: 2.337e+00e-9 | LR: 5.752e-05
+[04:10:20] Step: 56500 | MSE-acc 1: 2.746e-02 | MSE-pos 1: 9.646e-01e-9 | LR: 5.735e-05
+[04:11:17] Step: 56750 | MSE-acc 1: 5.853e-02 | MSE-pos 1: 2.710e+00e-9 | LR: 5.718e-05
+[04:12:14] Step: 57000 | MSE-acc 1: 4.484e-02 | MSE-pos 1: 3.105e+00e-9 | LR: 5.701e-05
+[04:14:09] Validation MSE-acc: 0.030 | MSE-pos: 2.89e-9
+                New best validation MSE-pos -> Saving model...
+[04:15:06] Step: 57250 | MSE-acc 1: 1.821e-01 | MSE-pos 1: 1.321e+01e-9 | LR: 5.684e-05
+[04:16:03] Step: 57500 | MSE-acc 1: 8.494e-02 | MSE-pos 1: 5.663e+00e-9 | LR: 5.667e-05
+[04:17:01] Step: 57750 | MSE-acc 1: 6.981e-02 | MSE-pos 1: 3.602e+00e-9 | LR: 5.650e-05
+[04:17:59] Step: 58000 | MSE-acc 1: 3.034e-02 | MSE-pos 1: 1.450e+00e-9 | LR: 5.634e-05
+[04:18:56] Step: 58250 | MSE-acc 1: 6.104e-02 | MSE-pos 1: 3.670e+00e-9 | LR: 5.617e-05
+[04:19:54] Step: 58500 | MSE-acc 1: 2.285e-01 | MSE-pos 1: 1.552e+01e-9 | LR: 5.600e-05
+[04:20:51] Step: 58750 | MSE-acc 1: 1.925e-02 | MSE-pos 1: 4.817e-01e-9 | LR: 5.583e-05
+[04:21:48] Step: 59000 | MSE-acc 1: 4.259e-02 | MSE-pos 1: 2.624e+00e-9 | LR: 5.567e-05
+[04:22:45] Step: 59250 | MSE-acc 1: 3.879e-02 | MSE-pos 1: 1.556e+00e-9 | LR: 5.550e-05
+[04:23:43] Step: 59500 | MSE-acc 1: 2.183e-02 | MSE-pos 1: 8.069e-01e-9 | LR: 5.534e-05
+[04:24:39] Step: 59750 | MSE-acc 1: 3.719e-02 | MSE-pos 1: 1.295e+00e-9 | LR: 5.517e-05
+[04:25:37] Step: 60000 | MSE-acc 1: 2.093e-02 | MSE-pos 1: 1.160e+00e-9 | LR: 5.501e-05
+[04:27:23] Validation MSE-acc: 0.033 | MSE-pos: 3.14e-9
+                No improvement. Steps without improvement: 1/100
+[04:28:19] Step: 60250 | MSE-acc 1: 4.222e-02 | MSE-pos 1: 1.884e+00e-9 | LR: 5.485e-05
+[04:29:16] Step: 60500 | MSE-acc 1: 1.633e-02 | MSE-pos 1: 5.869e-01e-9 | LR: 5.468e-05
+[04:30:12] Step: 60750 | MSE-acc 1: 8.158e-02 | MSE-pos 1: 4.968e+00e-9 | LR: 5.452e-05
+[04:31:09] Step: 61000 | MSE-acc 1: 7.176e-02 | MSE-pos 1: 5.043e+00e-9 | LR: 5.436e-05
+[04:32:07] Step: 61250 | MSE-acc 1: 6.415e-02 | MSE-pos 1: 3.572e+00e-9 | LR: 5.420e-05
+[04:33:04] Step: 61500 | MSE-acc 1: 2.151e-02 | MSE-pos 1: 1.120e+00e-9 | LR: 5.404e-05
+[04:34:01] Step: 61750 | MSE-acc 1: 6.295e-02 | MSE-pos 1: 3.107e+00e-9 | LR: 5.388e-05
+[04:34:59] Step: 62000 | MSE-acc 1: 8.529e-02 | MSE-pos 1: 5.442e+00e-9 | LR: 5.372e-05
+[04:35:57] Step: 62250 | MSE-acc 1: 9.093e-02 | MSE-pos 1: 4.835e+00e-9 | LR: 5.356e-05
+[04:36:55] Step: 62500 | MSE-acc 1: 2.395e-02 | MSE-pos 1: 2.051e+00e-9 | LR: 5.340e-05
+[04:37:52] Step: 62750 | MSE-acc 1: 4.203e-02 | MSE-pos 1: 2.432e+00e-9 | LR: 5.324e-05
+[04:38:50] Step: 63000 | MSE-acc 1: 1.760e-02 | MSE-pos 1: 1.131e+00e-9 | LR: 5.308e-05
+[04:40:51] Validation MSE-acc: 0.031 | MSE-pos: 2.98e-9
+                No improvement. Steps without improvement: 2/100
+[04:41:50] Step: 63250 | MSE-acc 1: 3.297e-02 | MSE-pos 1: 2.364e+00e-9 | LR: 5.292e-05
+[04:42:49] Step: 63500 | MSE-acc 1: 2.764e-02 | MSE-pos 1: 1.494e+00e-9 | LR: 5.277e-05
+[04:43:48] Step: 63750 | MSE-acc 1: 5.575e-02 | MSE-pos 1: 3.527e+00e-9 | LR: 5.261e-05
+[04:44:46] Step: 64000 | MSE-acc 1: 4.044e-02 | MSE-pos 1: 2.759e+00e-9 | LR: 5.245e-05
+[04:45:43] Step: 64250 | MSE-acc 1: 5.619e-02 | MSE-pos 1: 3.776e+00e-9 | LR: 5.230e-05
+[04:46:40] Step: 64500 | MSE-acc 1: 3.558e-01 | MSE-pos 1: 2.696e+01e-9 | LR: 5.214e-05
+[04:47:37] Step: 64750 | MSE-acc 1: 3.251e-02 | MSE-pos 1: 2.333e+00e-9 | LR: 5.199e-05
+[04:48:35] Step: 65000 | MSE-acc 1: 1.543e-02 | MSE-pos 1: 8.021e-01e-9 | LR: 5.183e-05
+[04:49:32] Step: 65250 | MSE-acc 1: 3.238e-01 | MSE-pos 1: 2.371e+01e-9 | LR: 5.168e-05
+[04:50:31] Step: 65500 | MSE-acc 1: 8.119e-02 | MSE-pos 1: 5.611e+00e-9 | LR: 5.153e-05
+[04:51:33] Step: 65750 | MSE-acc 1: 4.612e-02 | MSE-pos 1: 1.999e+00e-9 | LR: 5.137e-05
+[04:52:31] Step: 66000 | MSE-acc 1: 1.537e-02 | MSE-pos 1: 1.233e+00e-9 | LR: 5.122e-05
+[04:54:18] Validation MSE-acc: 0.034 | MSE-pos: 3.25e-9
+                No improvement. Steps without improvement: 3/100
+[04:55:15] Step: 66250 | MSE-acc 1: 3.457e-02 | MSE-pos 1: 1.832e+00e-9 | LR: 5.107e-05
+[04:56:10] Step: 66500 | MSE-acc 1: 1.833e-02 | MSE-pos 1: 9.593e-01e-9 | LR: 5.092e-05
+[04:57:05] Step: 66750 | MSE-acc 1: 5.599e-02 | MSE-pos 1: 2.841e+00e-9 | LR: 5.077e-05
+[04:58:01] Step: 67000 | MSE-acc 1: 5.390e-02 | MSE-pos 1: 3.424e+00e-9 | LR: 5.062e-05
+[04:58:56] Step: 67250 | MSE-acc 1: 2.903e-02 | MSE-pos 1: 2.337e+00e-9 | LR: 5.047e-05
+[04:59:53] Step: 67500 | MSE-acc 1: 5.574e-02 | MSE-pos 1: 3.974e+00e-9 | LR: 5.032e-05
+[05:00:50] Step: 67750 | MSE-acc 1: 1.728e-02 | MSE-pos 1: 7.886e-01e-9 | LR: 5.017e-05
+[05:01:44] Step: 68000 | MSE-acc 1: 2.776e-02 | MSE-pos 1: 1.048e+00e-9 | LR: 5.002e-05
+[05:02:41] Step: 68250 | MSE-acc 1: 2.647e-02 | MSE-pos 1: 1.236e+00e-9 | LR: 4.987e-05
+[05:03:37] Step: 68500 | MSE-acc 1: 6.593e-02 | MSE-pos 1: 3.610e+00e-9 | LR: 4.972e-05
+[05:04:35] Step: 68750 | MSE-acc 1: 2.336e-02 | MSE-pos 1: 1.436e+00e-9 | LR: 4.958e-05
+[05:05:34] Step: 69000 | MSE-acc 1: 6.464e-02 | MSE-pos 1: 2.937e+00e-9 | LR: 4.943e-05
+[05:07:27] Validation MSE-acc: 0.032 | MSE-pos: 3.07e-9
+                No improvement. Steps without improvement: 4/100
+[05:08:22] Step: 69250 | MSE-acc 1: 1.655e-01 | MSE-pos 1: 8.797e+00e-9 | LR: 4.928e-05
+[05:09:18] Step: 69500 | MSE-acc 1: 1.604e-01 | MSE-pos 1: 1.022e+01e-9 | LR: 4.914e-05
+[05:10:14] Step: 69750 | MSE-acc 1: 2.771e-02 | MSE-pos 1: 1.174e+00e-9 | LR: 4.899e-05
+[05:11:11] Step: 70000 | MSE-acc 1: 4.310e-02 | MSE-pos 1: 2.951e+00e-9 | LR: 4.885e-05
+[05:12:09] Step: 70250 | MSE-acc 1: 1.206e-01 | MSE-pos 1: 6.857e+00e-9 | LR: 4.870e-05
+[05:13:07] Step: 70500 | MSE-acc 1: 3.375e-02 | MSE-pos 1: 1.726e+00e-9 | LR: 4.856e-05
+[05:14:04] Step: 70750 | MSE-acc 1: 1.820e-02 | MSE-pos 1: 9.474e-01e-9 | LR: 4.841e-05
+[05:15:02] Step: 71000 | MSE-acc 1: 2.694e-01 | MSE-pos 1: 2.243e+01e-9 | LR: 4.827e-05
+[05:16:00] Step: 71250 | MSE-acc 1: 1.500e-02 | MSE-pos 1: 8.068e-01e-9 | LR: 4.813e-05
+[05:16:57] Step: 71500 | MSE-acc 1: 3.536e-02 | MSE-pos 1: 1.814e+00e-9 | LR: 4.798e-05
+[05:17:54] Step: 71750 | MSE-acc 1: 2.699e-02 | MSE-pos 1: 1.285e+00e-9 | LR: 4.784e-05
+[05:18:52] Step: 72000 | MSE-acc 1: 3.674e-02 | MSE-pos 1: 1.900e+00e-9 | LR: 4.770e-05
+[05:20:52] Validation MSE-acc: 0.030 | MSE-pos: 2.88e-9
+                New best validation MSE-pos -> Saving model...
+[05:21:48] Step: 72250 | MSE-acc 1: 6.588e-02 | MSE-pos 1: 3.566e+00e-9 | LR: 4.756e-05
+[05:22:44] Step: 72500 | MSE-acc 1: 5.032e-02 | MSE-pos 1: 2.295e+00e-9 | LR: 4.742e-05
+[05:23:41] Step: 72750 | MSE-acc 1: 3.885e-02 | MSE-pos 1: 2.157e+00e-9 | LR: 4.728e-05
+[05:24:37] Step: 73000 | MSE-acc 1: 8.948e-02 | MSE-pos 1: 5.516e+00e-9 | LR: 4.714e-05
+[05:25:35] Step: 73250 | MSE-acc 1: 9.464e-02 | MSE-pos 1: 5.861e+00e-9 | LR: 4.700e-05
+[05:26:32] Step: 73500 | MSE-acc 1: 3.038e-02 | MSE-pos 1: 1.753e+00e-9 | LR: 4.686e-05
+[05:27:29] Step: 73750 | MSE-acc 1: 1.950e-02 | MSE-pos 1: 9.028e-01e-9 | LR: 4.672e-05
+[05:28:26] Step: 74000 | MSE-acc 1: 2.968e-02 | MSE-pos 1: 1.703e+00e-9 | LR: 4.658e-05
+[05:29:23] Step: 74250 | MSE-acc 1: 7.616e-02 | MSE-pos 1: 5.326e+00e-9 | LR: 4.644e-05
+[05:30:21] Step: 74500 | MSE-acc 1: 5.365e-02 | MSE-pos 1: 3.186e+00e-9 | LR: 4.631e-05
+[05:31:18] Step: 74750 | MSE-acc 1: 7.089e-02 | MSE-pos 1: 5.631e+00e-9 | LR: 4.617e-05
+[05:32:14] Step: 75000 | MSE-acc 1: 4.789e-02 | MSE-pos 1: 2.540e+00e-9 | LR: 4.603e-05
+[05:34:04] Validation MSE-acc: 0.029 | MSE-pos: 2.78e-9
+                New best validation MSE-pos -> Saving model...
+[05:35:02] Step: 75250 | MSE-acc 1: 2.825e-02 | MSE-pos 1: 1.305e+00e-9 | LR: 4.590e-05
+[05:36:00] Step: 75500 | MSE-acc 1: 1.956e-02 | MSE-pos 1: 1.116e+00e-9 | LR: 4.576e-05
+[05:36:58] Step: 75750 | MSE-acc 1: 1.435e-02 | MSE-pos 1: 8.607e-01e-9 | LR: 4.563e-05
+[05:37:54] Step: 76000 | MSE-acc 1: 8.079e-02 | MSE-pos 1: 4.645e+00e-9 | LR: 4.549e-05
+[05:38:52] Step: 76250 | MSE-acc 1: 1.200e-01 | MSE-pos 1: 7.521e+00e-9 | LR: 4.536e-05
+[05:39:49] Step: 76500 | MSE-acc 1: 4.079e-02 | MSE-pos 1: 1.803e+00e-9 | LR: 4.522e-05
+[05:40:44] Step: 76750 | MSE-acc 1: 3.523e-02 | MSE-pos 1: 1.432e+00e-9 | LR: 4.509e-05
+[05:41:41] Step: 77000 | MSE-acc 1: 4.868e-02 | MSE-pos 1: 2.785e+00e-9 | LR: 4.495e-05
+[05:42:36] Step: 77250 | MSE-acc 1: 3.368e-02 | MSE-pos 1: 1.821e+00e-9 | LR: 4.482e-05
+[05:43:32] Step: 77500 | MSE-acc 1: 6.495e-02 | MSE-pos 1: 3.991e+00e-9 | LR: 4.469e-05
+[05:44:30] Step: 77750 | MSE-acc 1: 1.468e-02 | MSE-pos 1: 6.772e-01e-9 | LR: 4.456e-05
+[05:45:29] Step: 78000 | MSE-acc 1: 6.251e-02 | MSE-pos 1: 3.956e+00e-9 | LR: 4.443e-05
+[05:47:17] Validation MSE-acc: 0.032 | MSE-pos: 3.04e-9
+                No improvement. Steps without improvement: 1/100
+[05:48:13] Step: 78250 | MSE-acc 1: 4.935e-02 | MSE-pos 1: 2.324e+00e-9 | LR: 4.429e-05
+[05:49:11] Step: 78500 | MSE-acc 1: 6.294e-02 | MSE-pos 1: 2.723e+00e-9 | LR: 4.416e-05
+[05:50:10] Step: 78750 | MSE-acc 1: 4.853e-02 | MSE-pos 1: 3.684e+00e-9 | LR: 4.403e-05
+[05:51:08] Step: 79000 | MSE-acc 1: 7.064e-02 | MSE-pos 1: 3.813e+00e-9 | LR: 4.390e-05
+[05:52:06] Step: 79250 | MSE-acc 1: 1.917e-01 | MSE-pos 1: 1.166e+01e-9 | LR: 4.377e-05
+[05:53:03] Step: 79500 | MSE-acc 1: 2.830e-02 | MSE-pos 1: 1.154e+00e-9 | LR: 4.364e-05
+[05:54:03] Step: 79750 | MSE-acc 1: 6.623e-02 | MSE-pos 1: 4.483e+00e-9 | LR: 4.351e-05
+[05:55:00] Step: 80000 | MSE-acc 1: 2.180e-02 | MSE-pos 1: 6.515e-01e-9 | LR: 4.339e-05
+[05:56:00] Step: 80250 | MSE-acc 1: 1.043e-01 | MSE-pos 1: 5.426e+00e-9 | LR: 4.326e-05
+[05:56:58] Step: 80500 | MSE-acc 1: 1.720e-02 | MSE-pos 1: 1.203e+00e-9 | LR: 4.313e-05
+[05:57:56] Step: 80750 | MSE-acc 1: 3.929e-02 | MSE-pos 1: 1.901e+00e-9 | LR: 4.300e-05
+[05:58:54] Step: 81000 | MSE-acc 1: 3.563e-02 | MSE-pos 1: 1.651e+00e-9 | LR: 4.287e-05
+[06:01:00] Validation MSE-acc: 0.031 | MSE-pos: 2.94e-9
+                No improvement. Steps without improvement: 2/100
+[06:01:56] Step: 81250 | MSE-acc 1: 1.446e-02 | MSE-pos 1: 4.402e-01e-9 | LR: 4.275e-05
+[06:02:52] Step: 81500 | MSE-acc 1: 2.115e-02 | MSE-pos 1: 9.130e-01e-9 | LR: 4.262e-05
+[06:03:48] Step: 81750 | MSE-acc 1: 6.528e-02 | MSE-pos 1: 4.686e+00e-9 | LR: 4.250e-05
+[06:04:46] Step: 82000 | MSE-acc 1: 4.586e-02 | MSE-pos 1: 2.166e+00e-9 | LR: 4.237e-05
+[06:05:43] Step: 82250 | MSE-acc 1: 4.548e-02 | MSE-pos 1: 1.684e+00e-9 | LR: 4.225e-05
+[06:06:41] Step: 82500 | MSE-acc 1: 1.676e-02 | MSE-pos 1: 9.307e-01e-9 | LR: 4.212e-05
+[06:07:37] Step: 82750 | MSE-acc 1: 1.394e-02 | MSE-pos 1: 8.280e-01e-9 | LR: 4.200e-05
+[06:08:35] Step: 83000 | MSE-acc 1: 4.210e-02 | MSE-pos 1: 2.481e+00e-9 | LR: 4.187e-05
+[06:09:32] Step: 83250 | MSE-acc 1: 2.396e-02 | MSE-pos 1: 1.393e+00e-9 | LR: 4.175e-05
+[06:10:28] Step: 83500 | MSE-acc 1: 1.664e-02 | MSE-pos 1: 9.295e-01e-9 | LR: 4.162e-05
+[06:11:26] Step: 83750 | MSE-acc 1: 2.728e-02 | MSE-pos 1: 1.494e+00e-9 | LR: 4.150e-05
+[06:12:23] Step: 84000 | MSE-acc 1: 5.105e-02 | MSE-pos 1: 3.672e+00e-9 | LR: 4.138e-05
+[06:14:13] Validation MSE-acc: 0.030 | MSE-pos: 2.84e-9
+                No improvement. Steps without improvement: 3/100
+[06:15:11] Step: 84250 | MSE-acc 1: 3.181e-02 | MSE-pos 1: 1.330e+00e-9 | LR: 4.126e-05
+[06:16:08] Step: 84500 | MSE-acc 1: 3.468e-02 | MSE-pos 1: 1.527e+00e-9 | LR: 4.114e-05
+[06:17:06] Step: 84750 | MSE-acc 1: 2.525e-02 | MSE-pos 1: 9.409e-01e-9 | LR: 4.101e-05
+[06:18:04] Step: 85000 | MSE-acc 1: 5.164e-02 | MSE-pos 1: 3.008e+00e-9 | LR: 4.089e-05
+[06:19:01] Step: 85250 | MSE-acc 1: 4.198e-02 | MSE-pos 1: 2.861e+00e-9 | LR: 4.077e-05
+[06:20:00] Step: 85500 | MSE-acc 1: 6.991e-02 | MSE-pos 1: 4.296e+00e-9 | LR: 4.065e-05
+[06:20:58] Step: 85750 | MSE-acc 1: 2.025e-02 | MSE-pos 1: 9.064e-01e-9 | LR: 4.053e-05
+[06:21:55] Step: 86000 | MSE-acc 1: 1.899e-02 | MSE-pos 1: 1.010e+00e-9 | LR: 4.041e-05
+[06:22:52] Step: 86250 | MSE-acc 1: 2.279e-02 | MSE-pos 1: 7.432e-01e-9 | LR: 4.029e-05
+[06:23:48] Step: 86500 | MSE-acc 1: 6.301e-02 | MSE-pos 1: 4.221e+00e-9 | LR: 4.017e-05
+[06:24:44] Step: 86750 | MSE-acc 1: 4.102e-02 | MSE-pos 1: 2.676e+00e-9 | LR: 4.006e-05
+[06:25:42] Step: 87000 | MSE-acc 1: 3.373e-02 | MSE-pos 1: 1.895e+00e-9 | LR: 3.994e-05
+[06:27:40] Validation MSE-acc: 0.028 | MSE-pos: 2.71e-9
+                New best validation MSE-pos -> Saving model...
+[06:28:36] Step: 87250 | MSE-acc 1: 2.378e-02 | MSE-pos 1: 9.117e-01e-9 | LR: 3.982e-05
+[06:29:34] Step: 87500 | MSE-acc 1: 2.538e-02 | MSE-pos 1: 1.239e+00e-9 | LR: 3.970e-05
+[06:30:31] Step: 87750 | MSE-acc 1: 5.753e-02 | MSE-pos 1: 4.469e+00e-9 | LR: 3.959e-05
+[06:31:28] Step: 88000 | MSE-acc 1: 5.004e-02 | MSE-pos 1: 3.076e+00e-9 | LR: 3.947e-05
+[06:32:25] Step: 88250 | MSE-acc 1: 8.209e-02 | MSE-pos 1: 6.095e+00e-9 | LR: 3.935e-05
+[06:33:23] Step: 88500 | MSE-acc 1: 1.569e-02 | MSE-pos 1: 3.936e-01e-9 | LR: 3.924e-05
+[06:34:21] Step: 88750 | MSE-acc 1: 7.794e-02 | MSE-pos 1: 4.247e+00e-9 | LR: 3.912e-05
+[06:35:18] Step: 89000 | MSE-acc 1: 7.297e-02 | MSE-pos 1: 5.594e+00e-9 | LR: 3.901e-05
+[06:36:13] Step: 89250 | MSE-acc 1: 1.973e-02 | MSE-pos 1: 8.555e-01e-9 | LR: 3.889e-05
+[06:37:10] Step: 89500 | MSE-acc 1: 3.855e-02 | MSE-pos 1: 1.919e+00e-9 | LR: 3.878e-05
+[06:38:08] Step: 89750 | MSE-acc 1: 1.428e-02 | MSE-pos 1: 6.153e-01e-9 | LR: 3.866e-05
+[06:39:05] Step: 90000 | MSE-acc 1: 6.257e-02 | MSE-pos 1: 2.664e+00e-9 | LR: 3.855e-05
+[06:41:01] Validation MSE-acc: 0.030 | MSE-pos: 2.83e-9
+                No improvement. Steps without improvement: 1/100
+[06:41:57] Step: 90250 | MSE-acc 1: 7.935e-02 | MSE-pos 1: 5.615e+00e-9 | LR: 3.843e-05
+[06:42:53] Step: 90500 | MSE-acc 1: 3.548e-02 | MSE-pos 1: 2.124e+00e-9 | LR: 3.832e-05
+[06:43:48] Step: 90750 | MSE-acc 1: 2.519e-02 | MSE-pos 1: 1.696e+00e-9 | LR: 3.821e-05
+[06:44:46] Step: 91000 | MSE-acc 1: 1.539e-02 | MSE-pos 1: 6.524e-01e-9 | LR: 3.810e-05
+[06:45:42] Step: 91250 | MSE-acc 1: 2.018e-02 | MSE-pos 1: 7.551e-01e-9 | LR: 3.798e-05
+[06:46:38] Step: 91500 | MSE-acc 1: 4.322e-02 | MSE-pos 1: 2.968e+00e-9 | LR: 3.787e-05
+[06:47:33] Step: 91750 | MSE-acc 1: 2.242e-02 | MSE-pos 1: 9.959e-01e-9 | LR: 3.776e-05
+[06:48:29] Step: 92000 | MSE-acc 1: 1.657e-02 | MSE-pos 1: 5.219e-01e-9 | LR: 3.765e-05
+[06:49:25] Step: 92250 | MSE-acc 1: 1.855e-02 | MSE-pos 1: 7.502e-01e-9 | LR: 3.754e-05
+[06:50:22] Step: 92500 | MSE-acc 1: 2.481e-02 | MSE-pos 1: 1.582e+00e-9 | LR: 3.743e-05
+[06:51:18] Step: 92750 | MSE-acc 1: 5.132e-02 | MSE-pos 1: 3.183e+00e-9 | LR: 3.732e-05
+[06:52:17] Step: 93000 | MSE-acc 1: 5.998e-02 | MSE-pos 1: 2.864e+00e-9 | LR: 3.721e-05
+[06:54:18] Validation MSE-acc: 0.029 | MSE-pos: 2.79e-9
+                No improvement. Steps without improvement: 2/100
+[06:55:15] Step: 93250 | MSE-acc 1: 3.964e-02 | MSE-pos 1: 1.833e+00e-9 | LR: 3.710e-05
+[06:56:10] Step: 93500 | MSE-acc 1: 4.011e-02 | MSE-pos 1: 2.684e+00e-9 | LR: 3.699e-05
+[06:57:08] Step: 93750 | MSE-acc 1: 8.461e-02 | MSE-pos 1: 4.906e+00e-9 | LR: 3.688e-05
+[06:58:07] Step: 94000 | MSE-acc 1: 3.665e-02 | MSE-pos 1: 1.981e+00e-9 | LR: 3.677e-05
+[06:59:05] Step: 94250 | MSE-acc 1: 1.902e-02 | MSE-pos 1: 7.232e-01e-9 | LR: 3.666e-05
+[07:00:03] Step: 94500 | MSE-acc 1: 1.216e-02 | MSE-pos 1: 4.963e-01e-9 | LR: 3.655e-05
+[07:01:00] Step: 94750 | MSE-acc 1: 1.600e-02 | MSE-pos 1: 1.000e+00e-9 | LR: 3.645e-05
+[07:01:56] Step: 95000 | MSE-acc 1: 2.316e-01 | MSE-pos 1: 1.522e+01e-9 | LR: 3.634e-05
+[07:02:54] Step: 95250 | MSE-acc 1: 3.066e-02 | MSE-pos 1: 1.912e+00e-9 | LR: 3.623e-05
+[07:03:53] Step: 95500 | MSE-acc 1: 1.286e-02 | MSE-pos 1: 1.125e+00e-9 | LR: 3.613e-05
+[07:04:53] Step: 95750 | MSE-acc 1: 1.627e-02 | MSE-pos 1: 5.453e-01e-9 | LR: 3.602e-05
+[07:05:48] Step: 96000 | MSE-acc 1: 1.923e-02 | MSE-pos 1: 8.986e-01e-9 | LR: 3.591e-05
+[07:07:35] Validation MSE-acc: 0.029 | MSE-pos: 2.76e-9
+                No improvement. Steps without improvement: 3/100
+[07:08:31] Step: 96250 | MSE-acc 1: 2.865e-02 | MSE-pos 1: 1.207e+00e-9 | LR: 3.581e-05
+[07:09:31] Step: 96500 | MSE-acc 1: 3.420e-02 | MSE-pos 1: 1.454e+00e-9 | LR: 3.570e-05
+[07:10:29] Step: 96750 | MSE-acc 1: 6.891e-02 | MSE-pos 1: 4.024e+00e-9 | LR: 3.560e-05
+[07:11:26] Step: 97000 | MSE-acc 1: 1.547e-02 | MSE-pos 1: 5.138e-01e-9 | LR: 3.549e-05
+[07:12:25] Step: 97250 | MSE-acc 1: 3.395e-02 | MSE-pos 1: 2.172e+00e-9 | LR: 3.539e-05
+[07:13:24] Step: 97500 | MSE-acc 1: 1.292e-02 | MSE-pos 1: 6.647e-01e-9 | LR: 3.529e-05
+[07:14:24] Step: 97750 | MSE-acc 1: 1.071e-02 | MSE-pos 1: 1.449e-01e-9 | LR: 3.518e-05
+[07:15:20] Step: 98000 | MSE-acc 1: 3.919e-02 | MSE-pos 1: 1.404e+00e-9 | LR: 3.508e-05
+[07:16:19] Step: 98250 | MSE-acc 1: 1.220e-02 | MSE-pos 1: 6.577e-01e-9 | LR: 3.498e-05
+[07:17:17] Step: 98500 | MSE-acc 1: 3.032e-01 | MSE-pos 1: 2.365e+01e-9 | LR: 3.487e-05
+[07:18:15] Step: 98750 | MSE-acc 1: 3.803e-02 | MSE-pos 1: 1.578e+00e-9 | LR: 3.477e-05
+[07:19:13] Step: 99000 | MSE-acc 1: 1.200e-01 | MSE-pos 1: 6.332e+00e-9 | LR: 3.467e-05
+[07:20:50] Validation MSE-acc: 0.028 | MSE-pos: 2.66e-9
+                New best validation MSE-pos -> Saving model...
+[07:21:47] Step: 99250 | MSE-acc 1: 1.201e-02 | MSE-pos 1: 4.617e-01e-9 | LR: 3.457e-05
+^C
+Training interrupted.
+Saving current checkpoint - Step: 99347
+
+[07:22:08] Training completed!
+
+
+
+
+(base) elderveliz@MWPC15XSG6 latest_download % bash ./eval.sh 
++-----------------------+-----------------+
+| Parameter             | Value           |
++=======================+=================+
+| Batch size            | 2               |
++-----------------------+-----------------+
+| Compute all metrics   | True            |
++-----------------------+-----------------+
+| Dataset               | WaterDropSample |
++-----------------------+-----------------+
+| Dropout               | 0.0             |
++-----------------------+-----------------+
+| Eval split            | test            |
++-----------------------+-----------------+
+| Gat heads             | 8               |
++-----------------------+-----------------+
+| Gnn type              | interaction_net |
++-----------------------+-----------------+
+| Hidden channels       | 32              |
++-----------------------+-----------------+
+| Loss type             | one_step        |
++-----------------------+-----------------+
+| Lr                    | 0.0001          |
++-----------------------+-----------------+
+| Message passing steps | 10              |
++-----------------------+-----------------+
+| Mode                  | eval            |
++-----------------------+-----------------+
+| Model path            | models          |
++-----------------------+-----------------+
+| N rollout steps       | 1               |
++-----------------------+-----------------+
+| Noise std             | 0.0003          |
++-----------------------+-----------------+
+| Num gnn layers        | 2               |
++-----------------------+-----------------+
+| Num steps             | 20000000.0      |
++-----------------------+-----------------+
+| Out heads             | 1               |
++-----------------------+-----------------+
+| Output path           | rollouts        |
++-----------------------+-----------------+
+| Seed                  | 483             |
++-----------------------+-----------------+
+| Use bn                | False           |
++-----------------------+-----------------+
+| Use residual          | False           |
++-----------------------+-----------------+
+| Weight decay          | 0               |
++-----------------------+-----------------+
+
+Load checkpoint from: models/WaterDropSample/interaction_net/one_step/best_val_mse_pos.pt
+
+Computing one-step metrics...
+Step: 0 | MSE-acc 1: 8.676e-03 | MSE-pos 1: 0.830e-9
+Step: 200 | MSE-acc 1: 9.221e-02 | MSE-pos 1: 8.795e-9
+Step: 400 | MSE-acc 1: 5.159e-03 | MSE-pos 1: 0.493e-9
+Step: 600 | MSE-acc 1: 4.774e-02 | MSE-pos 1: 4.610e-9
+Step: 800 | MSE-acc 1: 1.878e-02 | MSE-pos 1: 1.803e-9
+
+Computing trajectory metrics...
+Step: 0 | MSE-pos 20: 2.257e-02 | MSE-acc 20: 2.383e+05 | MSE-pos 400: 2.281e-02 | MSE-acc 400: 2.408e+05 | EMD: 5.549e-02
+Step: 1 | MSE-pos 20: 4.204e-02 | MSE-acc 20: 4.423e+05 | MSE-pos 400: 4.248e-02 | MSE-acc 400: 4.470e+05 | EMD: 8.734e-02
+
+Average metrics across all evaluations:
+mse_acc_1: 5.125e-02
+mse_pos_1: 4.918e-09
+mse_pos_20: 3.231e-02
+mse_acc_20: 3.403e+05
+mse_pos_400: 3.265e-02
+mse_acc_400: 3.439e+05
+emd: 7.142e-02
