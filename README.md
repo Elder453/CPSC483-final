@@ -184,7 +184,7 @@ Below is a simplified directory layout:
 
 ## Notes
 
-- The code assumes `CUDA 12.4` availability. For CPU-only usage, modify device settings and `environment.yml` accordingly.
+- This project was developed using Yale's Grace high-performance computing cluster. Thus, the code assumes `CUDA 12.4` availability. For CPU-only usage, modify device settings and `environment.yml` accordingly.
 - Training time varies based on dataset size and computational resources.
 - Best validation checkpoints are automatically saved during training.
 - Parameters may need adjustment based on your specific use case.
