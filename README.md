@@ -1,4 +1,4 @@
-# Learning to Simulate Physics
+# Fluid Minds: Learning to Simulate Physics
 
 <p align="center">
   <img src="rollouts/WaterDropSample/interaction_net/one_step/test/ex0.gif" alt="Water Drop Sample" width="400">
