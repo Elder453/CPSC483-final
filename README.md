@@ -1,7 +1,7 @@
 # Learning to Simulate Physics
 
 <p align="center">
-  <img src="rollouts/WaterDropSample/interaction_net/one_step/ex0.gif" alt="Water Drop Sample" width="400">
+  <img src="rollouts/WaterDropSample/interaction_net/one_step/test/ex0.gif" alt="Water Drop Sample" width="400">
 </p>
 <p align="center"><em>An example of water-drop particles simulated using an Interaction Network.</em></p>
 
