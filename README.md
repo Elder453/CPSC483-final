@@ -87,7 +87,7 @@ mkdir -p ./rollouts
 
 We provide shell scripts to automatically download datasets. For example, to download a small “WaterDropSample” dataset:
 ```bash
-bash ./download_dataset.sh WaterDropSample ./datasets
+bash ./bash/download_dataset.sh WaterDropSample ./datasets
 ```
 This populates `./datasets/WaterDropSample` with `train/`, `valid`, and `test/` splits.
 
@@ -98,7 +98,7 @@ This populates `./datasets/WaterDropSample` with `train/`, `valid`, and `test/` 
 
 Train a model with default parameters:
 ```bash
-bash ./train.sh
+bash ./bash/train.sh
 ```
 Inside the `train.sh` script, you can adjust arguments (e.g., `--dataset`, `--gnn_type`, `--num_steps`, etc.). By default, it trains an **interaction network** using a **one-step loss function**.
 
@@ -107,7 +107,7 @@ Inside the `train.sh` script, you can adjust arguments (e.g., `--dataset`, `--gn
 
 Evaluate model predictions:
 ```bash
-bash ./eval.sh
+bash ./bash/eval.sh
 ```
 - Computes single-step metrics (position and acceleration MSE).
 - If enabled, computes full rollout metrics like multi-step MSE and Earth Mover’s Distance.
@@ -116,7 +116,7 @@ bash ./eval.sh
 
 Generate and animate full trajectory rollouts:
 ```bash
-bash ./rollout.sh
+bash ./bash/rollout.sh
 ```
 - Produces .pkl files capturing predicted rollouts. 
 - Then, renders them as GIF animations (like the one shown above) in `./rollouts`.
@@ -125,7 +125,7 @@ bash ./rollout.sh
 
 Alternatively, to train a model, evaluate it on a held-out test set, and generate and animate the full trajectory:
 ```bash
-bash ./train_eval_render.sh
+bash ./bash/train_eval_render.sh
 ```
 - This is simply a concatenation of the aforementioned files!
 
@@ -149,6 +149,8 @@ Additional parameters can be found in the `main.py` code or by reading the provi
 Below is a simplified directory layout:
 ```
 /CPSC483-final/
+├── deliverables/
+│   └── report.pdf
 ├── datasets/                  # Dataset storage
 │   └── WaterDropSample/
 │       ├── train/
@@ -170,16 +172,18 @@ Below is a simplified directory layout:
 │   ├── models.py
 │   ├── render_rollout.py
 │   ├── rollout.py
+|   ├── transform_to_pkl.py
 │   ├── utils_connectivity.py
 │   ├── utils_eval.py
 │   ├── utils_noise.py
 │   └── utils.py
+├── bash/                       # Bash scripts
+│   ├── download_dataset.sh
+│   ├── train.sh
+│   ├── eval.sh
+│   ├── rollout.sh
+│   └── train_eval_render.sh
 ├── environment.yml
-├── transform_to_pkl.py
-├── download_dataset.sh
-├── train.sh
-├── eval.sh
-├── rollout.sh
 └── README.md
 ```
 
@@ -231,9 +235,5 @@ For any questions, suggestions, or contributions, please reach out to:
 - **Elder Veliz**  
   Email: [elder.veliz@yale.edu](mailto:elder.veliz@yale.edu)  
   GitHub: [github.com/elder453](https://github.com/Elder453)
-
-- **Teo Dimov**  
-  Email: [teo.dimov@yale.edu](mailto:teo.dimov@yale.edu)  
-  GitHub: [github.com/teodimov](https://github.com/teodimov)
 
 Alternatively, you can open an issue on the [GitHub repository](https://github.com/Elder453/CPSC483-final) for any inquiries or to report bugs.

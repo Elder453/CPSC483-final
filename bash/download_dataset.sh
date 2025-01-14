@@ -20,7 +20,7 @@ echo -e "\nTransforming datasets to PKL format..."
 for split in train valid test
 do
     echo "Processing ${split} split..."
-    python transform_to_pkl.py --dataset ${DATASET_NAME} --split ${split}
+    python src/transform_to_pkl.py --dataset ${DATASET_NAME} --split ${split}
 done
 
 echo -e "\nDownload and transformation completed successfully!"
